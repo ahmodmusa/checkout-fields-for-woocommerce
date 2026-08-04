@@ -1,0 +1,26 @@
+* text=auto eol=lf
+
+*.php text
+*.js text
+*.css text
+*.json text
+*.xml text
+*.md text
+*.txt text
+*.yml text
+*.yaml text
+*.dist text
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.svg binary
+*.webp binary
+*.zip binary
+
+/docs export-ignore
+/tests export-ignore
+/.editorconfig export-ignore
+/.gitignore export-ignore
+/.gitattributes export-ignore

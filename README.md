@@ -1,0 +1,36 @@
+# Checkout Fields for WooCommerce
+
+This repository is the production-quality foundation for the Checkout Fields for WooCommerce plugin.
+
+## Project Status
+
+This branch is currently a repository foundation only. It contains the WordPress plugin bootstrap, repository configuration, and quality tooling. No business logic, WooCommerce feature hooks, or checkout fields are implemented here.
+
+## Requirements
+
+- WordPress 6.7+
+- WooCommerce 9+
+- PHP 8.2+
+
+## Repository Layout
+
+- `src/` – source namespace for future plugin classes
+- `assets/` – static assets directory
+- `languages/` – translation domain files
+- `tests/` – test suite directory
+- `docs/` – project documentation
+
+## Development Quality Gates
+
+- Composer for package management
+- PHPCS for WordPress coding standards
+- PHPStan for static analysis
+- WordPress.org-ready metadata and packaging files
+
+## Contributing
+
+Contributions should remain focused on repository foundation quality only until the project moves beyond initialization.
+
+## License
+
+This repository is licensed under the GNU General Public License v2 or later.

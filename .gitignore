@@ -1,0 +1,26 @@
+# Composer
+/vendor/
+/composer.lock
+
+# Test and analysis artifacts
+/phpcs.xml
+/phpstan.neon
+/phpunit.xml
+/.phpunit.result.cache
+/.phpunit.cache/
+/.phpcs-cache
+/.phpstan/
+/coverage/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*.log
+
+# Build and packaging artifacts
+/dist/
+/build/

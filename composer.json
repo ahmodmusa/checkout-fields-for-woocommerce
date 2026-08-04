@@ -1,0 +1,38 @@
+{
+  "name": "ahmodmusa/wc-checkout-fields",
+  "description": "Foundation repository for Checkout Fields for WooCommerce.",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "require-dev": {
+    "phpstan/phpstan": "^1.12",
+    "phpunit/phpunit": "^11.0",
+    "squizlabs/php_codesniffer": "^3.10",
+    "wp-coding-standards/wpcs": "^3.0"
+  },
+  "config": {
+    "sort-packages": true,
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true
+    }
+  },
+  "autoload": {
+    "psr-4": {
+      "SCFW\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "SCFW\\Tests\\": "tests/"
+    }
+  },
+  "scripts": {
+    "test": "phpunit",
+    "phpcs": "phpcs",
+    "phpstan": "phpstan analyse",
+    "phpcs:fix": "phpcbf"
+  }
+}
+

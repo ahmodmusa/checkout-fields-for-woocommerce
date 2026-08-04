@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<ruleset name="checkout-fields-for-woocommerce">
+    <description>PHPCS ruleset for Checkout Fields for WooCommerce.</description>
+
+    <arg name="basepath" value="."/>
+    <arg name="extensions" value="php"/>
+    <arg name="parallel" value="8"/>
+    <arg name="cache" value=".phpcs-cache"/>
+    <arg name="colors"/>
+    <arg name="warning-severity" value="0"/>
+
+    <exclude-pattern>*/vendor/*</exclude-pattern>
+    <exclude-pattern>*/node_modules/*</exclude-pattern>
+
+    <file>./checkout-fields-for-woocommerce.php</file>
+    <file>./src/</file>
+    <file>./tests/</file>
+
+    <rule ref="WordPress"/>
+    <rule ref="WordPress-Docs"/>
+    <rule ref="WordPress-Extra"/>
+
+    <config name="minimum_supported_wp_version" value="6.7"/>
+    <config name="testVersion" value="8.2-"/>
+</ruleset>
