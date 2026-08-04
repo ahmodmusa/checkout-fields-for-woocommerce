@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 namespace SCFW;
 
+use SCFW\Core\HookRegistrar;
+
 /**
  * Main plugin kernel class.
  *
@@ -24,5 +26,6 @@ final class Plugin {
 	 * @return void
 	 */
 	public static function boot(): void {
+		HookRegistrar::register();
 	}
 }
