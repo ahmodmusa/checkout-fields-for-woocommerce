@@ -24,6 +24,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
+	require_once __DIR__ . '/vendor/autoload.php';
+}
+
 if ( ! defined( 'SCFW_VERSION' ) ) {
 	define( 'SCFW_VERSION', '0.0.1' );
 }
