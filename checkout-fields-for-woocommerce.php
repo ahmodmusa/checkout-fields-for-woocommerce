@@ -23,3 +23,19 @@ declare(strict_types=1);
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
+
+if ( ! defined( 'SCFW_VERSION' ) ) {
+	define( 'SCFW_VERSION', '0.0.1' );
+}
+
+if ( ! defined( 'SCFW_FILE' ) ) {
+	define( 'SCFW_FILE', __FILE__ );
+}
+
+if ( ! defined( 'SCFW_PATH' ) ) {
+	define( 'SCFW_PATH', plugin_dir_path( __FILE__ ) );
+}
+
+if ( ! defined( 'SCFW_URL' ) ) {
+	define( 'SCFW_URL', plugin_dir_url( __FILE__ ) );
+}
