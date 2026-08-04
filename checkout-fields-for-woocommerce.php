@@ -21,6 +21,7 @@ declare(strict_types=1);
  */
 
 use SCFW\Plugin;
+use SCFW\Services\WooCommerceChecker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -44,6 +45,10 @@ if ( ! defined( 'SCFW_PATH' ) ) {
 
 if ( ! defined( 'SCFW_URL' ) ) {
 	define( 'SCFW_URL', plugin_dir_url( __FILE__ ) );
+}
+
+if ( ! WooCommerceChecker::isAvailable() ) {
+	return;
 }
 
 Plugin::boot();
