@@ -290,6 +290,77 @@ Never trust data from another layer.
 
 ---
 
+# Plugin Kernel
+
+The application entry point is the Plugin kernel.
+
+The root plugin file is responsible only for:
+
+- Plugin Header
+- ABSPATH protection
+- Composer autoload
+- Defining constants
+- Calling `Plugin::boot()`
+
+No business logic may exist in the root plugin file.
+
+---
+
+# Boot Process
+
+Application startup order
+
+Plugin Header
+
+↓
+
+ABSPATH Protection
+
+↓
+
+Composer Autoload
+
+↓
+
+Constants
+
+↓
+
+Plugin::boot()
+
+↓
+
+Service Registration (future)
+
+↓
+
+Hook Registration (future)
+
+↓
+
+Application Ready
+
+No additional startup steps may be inserted without architectural approval.
+
+---
+
+# Plugin Class
+
+The `Plugin` class is the application kernel.
+
+Responsibilities:
+
+- Coordinate application startup
+- Register services (future)
+- Register hooks (future)
+- Initialize the application (future)
+
+The `boot()` method is intentionally minimal during early milestones.
+
+Business logic must never exist in the Plugin kernel.
+
+---
+
 # Performance
 
 Avoid duplicate queries.
