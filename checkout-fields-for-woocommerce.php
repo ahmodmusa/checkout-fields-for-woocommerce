@@ -21,7 +21,6 @@ declare(strict_types=1);
  */
 
 use SCFW\Plugin;
-use SCFW\Services\WooCommerceChecker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -31,24 +30,11 @@ if ( file_exists( __DIR__ . '/vendor/autoload.php' ) ) {
 	require_once __DIR__ . '/vendor/autoload.php';
 }
 
-if ( ! defined( 'SCFW_VERSION' ) ) {
-	define( 'SCFW_VERSION', '0.0.1' );
-}
+define( 'SCFW_VERSION', '0.0.1' );
+define( 'SCFW_FILE', __FILE__ );
+define( 'SCFW_PATH', plugin_dir_path( __FILE__ ) );
+define( 'SCFW_URL', plugin_dir_url( __FILE__ ) );
 
-if ( ! defined( 'SCFW_FILE' ) ) {
-	define( 'SCFW_FILE', __FILE__ );
+if ( class_exists( Plugin::class ) ) {
+	add_action( 'plugins_loaded', array( Plugin::class, 'boot' ) );
 }
-
-if ( ! defined( 'SCFW_PATH' ) ) {
-	define( 'SCFW_PATH', plugin_dir_path( __FILE__ ) );
-}
-
-if ( ! defined( 'SCFW_URL' ) ) {
-	define( 'SCFW_URL', plugin_dir_url( __FILE__ ) );
-}
-
-if ( ! WooCommerceChecker::isAvailable() ) {
-	return;
-}
-
-Plugin::boot();

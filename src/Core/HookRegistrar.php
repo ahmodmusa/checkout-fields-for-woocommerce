@@ -22,6 +22,9 @@ final class HookRegistrar {
 	/**
 	 * Register all plugin hooks.
 	 *
+	 * The admin hooks remain registered regardless of the WooCommerce
+	 * availability. WooCommerce-dependent hooks are not registered here.
+	 *
 	 * @since 0.0.1
 	 *
 	 * @return void

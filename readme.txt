@@ -4,7 +4,7 @@ Tags: woocommerce, checkout, fields
 Requires at least: 6.7
 Tested up to: 6.7
 Requires PHP: 8.2
-Stable tag: 1.0.0
+Stable tag: 0.0.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -12,7 +12,7 @@ Checkout Fields for WooCommerce is the foundation repository for a WooCommerce c
 
 == Description ==
 
-This plugin repository is being prepared for WordPress.org production readiness. The initial release is a repository foundation only and does not introduce business logic, checkout field behavior, or WooCommerce feature integration.
+This plugin repository is being prepared for WordPress.org production readiness. The current version provides the plugin bootstrap, the WooCommerce dependency guard, and a foundational WordPress Settings API administration page. It does not yet introduce business logic, checkout field behavior, or WooCommerce checkout integration.
 
 This repository is intended to provide a clean, maintainable starting point for future plugin development.
 
@@ -38,13 +38,13 @@ This repository is a clean foundation for future development. It is not yet a fe
 
 == Changelog ==
 
-= 1.0.0 =
+= 0.0.1 =
 * Repository foundation initialized for WordPress.org production readiness.
-* Added plugin bootstrap, repository metadata, and quality-tool configuration.
+* Added plugin bootstrap, repository metadata, quality-tool configuration, WooCommerce dependency guard, hook registrar, admin menu, and a WordPress Settings API settings foundation.
 
 == Upgrade Notice ==
 
-= 1.0.0 =
+= 0.0.1 =
 Initial foundation release for repository production readiness.
 
 == Screenshots ==

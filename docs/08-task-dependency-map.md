@@ -45,7 +45,7 @@ T0004 Plugin Kernel
         ↓
 T0005 Boot Plugin
         ↓
-T0006 WooCommerce Compatibility
+T0006 WooCommerce Dependency Checker
         ↓
 T0007 Bootstrap Guard
 ```
@@ -54,20 +54,20 @@ T0007 Bootstrap Guard
 
 # Phase 1 — Bootstrap Framework
 
+Status
+
+Completed
+
 ```
-T0008 Hook Registration
+T0008 Hook Registrar
         ↓
-T0009 Asset Registration
+T0009 Connect Hook Registration
         ↓
-T0010 Admin Bootstrap
+T0010 Admin Menu Framework
         ↓
-T0011 Checkout Bootstrap
+T0011 Settings Page
         ↓
-T0012 Block Checkout Bootstrap
-        ↓
-T0013 Settings Bootstrap
-        ↓
-T0014 Plugin Lifecycle Integration
+T0012–T0015 Settings Foundation
 ```
 
 Nothing from Phase 2 may begin until Phase 1 is complete.

@@ -37,10 +37,11 @@ final class Settings {
 			'scfw',
 			self::OPTION_NAME,
 			array(
-				'type'         => 'array',
-				'show_in_rest' => false,
-				'default'      => array(),
-				'autoload'     => true,
+				'type'              => 'array',
+				'show_in_rest'      => false,
+				'default'           => array(),
+				'autoload'          => true,
+				'sanitize_callback' => array( self::class, 'sanitize' ),
 			)
 		);
 
@@ -58,6 +59,26 @@ final class Settings {
 			'scfw',
 			'scfw_general'
 		);
+	}
+
+	/**
+	 * Sanitize the plugin settings.
+	 *
+	 * Only sanitizes the currently implemented option: enabled.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param mixed $value Submitted settings value.
+	 * @return array
+	 */
+	public static function sanitize( $value ): array {
+		$options = is_array( $value ) ? $value : array();
+
+		if ( isset( $options['enabled'] ) ) {
+			$options['enabled'] = absint( $options['enabled'] );
+		}
+
+		return $options;
 	}
 
 	/**

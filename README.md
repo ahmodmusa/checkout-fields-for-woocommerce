@@ -4,7 +4,7 @@ This repository is the production-quality foundation for the Checkout Fields for
 
 ## Project Status
 
-This branch is currently a repository foundation only. It contains the WordPress plugin bootstrap, repository configuration, and quality tooling. No business logic, WooCommerce feature hooks, or checkout fields are implemented here.
+This branch provides the plugin bootstrap, the admin menu framework, and a WordPress Settings API settings foundation. The plugin loads and its admin menu remains available whether or not WooCommerce is active. No business logic, WooCommerce checkout hooks, or checkout fields are implemented yet.
 
 ## Requirements
 
@@ -14,7 +14,9 @@ This branch is currently a repository foundation only. It contains the WordPress
 
 ## Repository Layout
 
-- `src/` – source namespace for future plugin classes
+- `src/Admin/` – admin menu and settings classes
+- `src/Core/` – central hook registrar
+- `src/Services/` – reusable services
 - `assets/` – static assets directory
 - `languages/` – translation domain files
 - `tests/` – test suite directory
