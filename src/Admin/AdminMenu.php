@@ -43,10 +43,12 @@ final class AdminMenu {
 	 * @return void
 	 */
 	public static function render(): void {
-		settings_errors();
 		?>
 		<div class="wrap">
 			<h1><?php echo esc_html__( 'Checkout Fields', 'checkout-fields-for-woocommerce' ); ?></h1>
+
+			<?php settings_errors( 'scfw' ); ?>
+
 			<form method="post" action="options.php">
 				<?php
 				settings_fields( 'scfw' );

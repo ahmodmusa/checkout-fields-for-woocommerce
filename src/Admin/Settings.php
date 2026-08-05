@@ -28,11 +28,17 @@ final class Settings {
 	/**
 	 * Register the WordPress settings API.
 	 *
+	 * Only users with the manage_options capability may change settings.
+	 *
 	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
 	public static function register(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
 		register_setting(
 			'scfw',
 			self::OPTION_NAME,
