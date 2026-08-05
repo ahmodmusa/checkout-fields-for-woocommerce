@@ -24,7 +24,15 @@ final class AdminMenu {
 	 * @return void
 	 */
 	public static function register(): void {
-		add_menu_page( 'Checkout Fields', 'Checkout Fields', 'manage_options', 'scfw', array( self::class, 'render' ), 'dashicons-feedback', 56 );
+		add_menu_page(
+			__( 'Checkout Fields', 'checkout-fields-for-woocommerce' ),
+			__( 'Checkout Fields', 'checkout-fields-for-woocommerce' ),
+			'manage_options',
+			'scfw',
+			array( self::class, 'render' ),
+			'dashicons-feedback',
+			56
+		);
 	}
 
 	/**
@@ -35,8 +43,18 @@ final class AdminMenu {
 	 * @return void
 	 */
 	public static function render(): void {
-		echo '<div class="wrap">' . "\n";
-		echo '    <h1>Checkout Fields</h1>' . "\n";
-		echo '</div>';
+		settings_errors();
+		?>
+		<div class="wrap">
+			<h1><?php echo esc_html__( 'Checkout Fields', 'checkout-fields-for-woocommerce' ); ?></h1>
+			<form method="post" action="options.php">
+				<?php
+				settings_fields( 'scfw' );
+				do_settings_sections( 'scfw' );
+				submit_button();
+				?>
+			</form>
+		</div>
+		<?php
 	}
 }

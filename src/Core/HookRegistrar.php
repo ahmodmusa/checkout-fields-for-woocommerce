@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SCFW\Core;
 
 use SCFW\Admin\AdminMenu;
+use SCFW\Admin\Settings;
 
 /**
  * Central registrar for WordPress hooks.
@@ -27,5 +28,6 @@ final class HookRegistrar {
 	 */
 	public static function register(): void {
 		add_action( 'admin_menu', array( AdminMenu::class, 'register' ) );
+		add_action( 'admin_init', array( Settings::class, 'register' ) );
 	}
 }
