@@ -1,7 +1,4 @@
 <?php
-
-declare(strict_types=1);
-
 /**
  * Plugin Name: Checkout Fields for WooCommerce
  * Plugin URI: https://github.com/ahmodmusa/wc-checkout-fields
@@ -18,9 +15,14 @@ declare(strict_types=1);
  * Domain Path: /languages
  * WC requires at least: 9
  * WC tested up to: 9
+ *
+ * @package SCFW
  */
 
+declare(strict_types=1);
+
 use SCFW\Plugin;
+use SCFW\Services\WooCommerceChecker;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -37,4 +39,8 @@ define( 'SCFW_URL', plugin_dir_url( __FILE__ ) );
 
 if ( class_exists( Plugin::class ) ) {
 	add_action( 'plugins_loaded', array( Plugin::class, 'boot' ) );
+}
+
+if ( class_exists( WooCommerceChecker::class ) ) {
+	add_action( 'before_woocommerce_init', array( WooCommerceChecker::class, 'declareCompatibility' ) );
 }
