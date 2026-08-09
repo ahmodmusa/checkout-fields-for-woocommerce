@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
 - Validation Foundation: WordPress-independent Validator with per-type rules and ValidationResult/ValidationError value objects.
 - Rendering Foundation: Renderer contract shared by Classic and Block Checkout, RenderContext/RenderResult value objects, and renderer factory.
 - WooCommerce feature compatibility declaration (custom order tables / HPOS) via the FeaturesUtil API.
+- Classic Checkout integration: render, validate, and save hooks wired into the WooCommerce Classic Checkout lifecycle.
+- First Classic Checkout field: the Delivery Instructions textarea, persisted to the `_scfw_delivery_instructions` order meta key.
+- Validation through the shared Core Validator, with no duplicated validation logic.
+- HPOS-compatible order meta storage via the WooCommerce order object (`_scfw_` meta prefix).
+- WooCommerce Admin Order Display: saved checkout field values rendered on the order edit screen.
+- Live verification completed on WordPress 7.0.2 + WooCommerce 11.0.0.
 
 ### Changed
 - Configured PHPCS to match the frozen PSR-4/PSR-12 architecture rather than forcing legacy WordPress naming conventions.
