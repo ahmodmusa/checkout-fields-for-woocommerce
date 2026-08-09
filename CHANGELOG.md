@@ -16,6 +16,13 @@ All notable changes to this project will be documented in this file.
 - WooCommerce Admin Order Display: saved checkout field values rendered on the order edit screen.
 - Live verification completed on WordPress 7.0.2 + WooCommerce 11.0.0.
 
+### Added (Block Checkout)
+- Block Checkout integration through the official WooCommerce Blocks additional checkout field API (`woocommerce_register_additional_checkout_field`).
+- Delivery Instructions registered on the Block Checkout `order` location with the Core TEXTAREA type mapped to the supported Blocks `text` type.
+- Submitted Block Checkout values persisted to the `_scfw_delivery_instructions` order meta key through the Store API order update flow, HPOS-compatible.
+- Shared Core Validator reused by both Classic and Block Checkout; no duplicated validation logic.
+- Documented the adapter-level type mapping decision in the architecture doc.
+
 ### Changed
 - Configured PHPCS to match the frozen PSR-4/PSR-12 architecture rather than forcing legacy WordPress naming conventions.
 - Updated README and CHANGELOG to describe the implemented foundations.

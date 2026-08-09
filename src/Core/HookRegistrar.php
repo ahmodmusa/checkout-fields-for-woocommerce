@@ -12,6 +12,7 @@ namespace SCFW\Core;
 use SCFW\Admin\AdminMenu;
 use SCFW\Admin\OrderDisplay;
 use SCFW\Admin\Settings;
+use SCFW\Frontend\BlockCheckoutBootstrap;
 use SCFW\Frontend\CheckoutBootstrap;
 use SCFW\Services\WooCommerceChecker;
 
@@ -39,6 +40,7 @@ final class HookRegistrar {
 
 		if ( WooCommerceChecker::isAvailable() ) {
 			CheckoutBootstrap::register();
+			BlockCheckoutBootstrap::register();
 			OrderDisplay::register();
 		}
 	}

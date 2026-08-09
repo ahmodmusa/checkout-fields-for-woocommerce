@@ -126,6 +126,22 @@ Business logic must never exist inside checkout implementations.
 
 ---
 
+# Adapter Type Mapping
+
+The Core field type and the UI control type may differ between checkout
+adapters when the target platform does not support the Core field type.
+
+This is an adapter-level compatibility mapping, not a Core architecture
+change. The Core Field definition and the FieldType enum are never modified
+for an adapter.
+
+For example, WooCommerce Blocks supports only the additional checkout field
+types text, select, and checkbox. The Block Checkout adapter maps the Core
+TEXTAREA type to the Blocks text type while the Classic Checkout adapter
+continues to render the Core TEXTAREA type unchanged.
+
+---
+
 # Business Logic Rules
 
 Business logic belongs only inside:
