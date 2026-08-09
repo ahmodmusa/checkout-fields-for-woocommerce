@@ -4,7 +4,17 @@ This repository is the production-quality foundation for the Checkout Fields for
 
 ## Project Status
 
-This branch is currently a repository foundation only. It contains the WordPress plugin bootstrap, repository configuration, and quality tooling. No business logic, WooCommerce feature hooks, or checkout fields are implemented here.
+This branch implements the plugin bootstrap, the admin menu framework, a WordPress Settings API settings foundation, and the internal core foundations for the field engine, validation, and rendering. The plugin loads and its admin menu remains available whether or not WooCommerce is active. WooCommerce feature compatibility (custom order tables / HPOS) is declared through the WooCommerce FeaturesUtil API when WooCommerce is present.
+
+Implemented foundations:
+
+- **Bootstrap** – plugin entry point, defensive Composer autoload loading, and the plugin kernel.
+- **Admin Foundation** – admin menu and WordPress Settings API settings foundation.
+- **Field Foundation** – immutable `Field` value object, `FieldType` enum, validating `FieldFactory`, and the default fields provider.
+- **Validation Foundation** – WordPress-independent `Validator` with per-type rules and `ValidationResult`/`ValidationError` value objects.
+- **Rendering Foundation** – the `Renderer` contract shared by Classic and Block Checkout, `RenderContext`/`RenderResult` value objects, and the renderer factory.
+
+No WooCommerce checkout hooks, checkout field persistence, or renderer implementations are wired in yet.
 
 ## Requirements
 
@@ -14,7 +24,12 @@ This branch is currently a repository foundation only. It contains the WordPress
 
 ## Repository Layout
 
-- `src/` – source namespace for future plugin classes
+- `src/Admin/` – admin menu and settings classes
+- `src/Core/` – core hook registrar and application foundations
+- `src/Core/Field/` – field engine foundation
+- `src/Core/Validation/` – validation foundation
+- `src/Core/Rendering/` – rendering foundation
+- `src/Services/` – reusable services
 - `assets/` – static assets directory
 - `languages/` – translation domain files
 - `tests/` – test suite directory
