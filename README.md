@@ -4,17 +4,19 @@ This repository is the production-quality foundation for the Checkout Fields for
 
 ## Project Status
 
-This branch implements the plugin bootstrap, the admin menu framework, a WordPress Settings API settings foundation, and the internal core foundations for the field engine, validation, and rendering. The plugin loads and its admin menu remains available whether or not WooCommerce is active. WooCommerce feature compatibility (custom order tables / HPOS) is declared through the WooCommerce FeaturesUtil API when WooCommerce is present.
+This branch implements configurable checkout fields for WooCommerce Classic and Block Checkout, including administration, import/export, ordering, validation, and HPOS-compatible order display. The plugin loads and its admin menu remains available whether or not WooCommerce is active. WooCommerce feature compatibility (custom order tables / HPOS) is declared through the WooCommerce FeaturesUtil API when WooCommerce is present.
 
-Implemented foundations:
+Implemented functionality:
 
 - **Bootstrap** – plugin entry point, defensive Composer autoload loading, and the plugin kernel.
-- **Admin Foundation** – admin menu and WordPress Settings API settings foundation.
-- **Field Foundation** – immutable `Field` value object, `FieldType` enum, validating `FieldFactory`, and the default fields provider.
+- **Administration** – admin menu, Settings API field builder, deterministic ordering, and protected JSON import/export.
+- **Field Engine** – immutable `Field` value object, `FieldType` enum, validating `FieldFactory`, default fields, and the settings-backed `FieldRepository`.
 - **Validation Foundation** – WordPress-independent `Validator` with per-type rules and `ValidationResult`/`ValidationError` value objects.
 - **Rendering Foundation** – the `Renderer` contract shared by Classic and Block Checkout, `RenderContext`/`RenderResult` value objects, and the renderer factory.
+- **Checkout Integration** – configurable Classic and Block Checkout adapters with shared validation and `_scfw_` order metadata.
+- **Admin Order Display** – escaped, capability-protected current and historical checkout values through WooCommerce order APIs.
 
-No WooCommerce checkout hooks, checkout field persistence, or renderer implementations are wired in yet.
+The global `scfw_options['enabled']` setting controls whether configured fields render, validate, register, or save. The administration page remains available when the feature is disabled.
 
 ## Requirements
 
@@ -24,9 +26,9 @@ No WooCommerce checkout hooks, checkout field persistence, or renderer implement
 
 ## Repository Layout
 
-- `src/Admin/` – admin menu and settings classes
+- `src/Admin/` – administration, field builder, import/export, and order display classes
 - `src/Core/` – core hook registrar and application foundations
-- `src/Core/Field/` – field engine foundation
+- `src/Core/Field/` – field engine and settings-backed field repository
 - `src/Core/Validation/` – validation foundation
 - `src/Core/Rendering/` – rendering foundation
 - `src/Services/` – reusable services
@@ -44,7 +46,7 @@ No WooCommerce checkout hooks, checkout field persistence, or renderer implement
 
 ## Contributing
 
-Contributions should remain focused on repository foundation quality only until the project moves beyond initialization.
+Contributions should preserve the documented Classic/Block adapter architecture and the existing WordPress/WooCommerce storage conventions.
 
 ## License
 

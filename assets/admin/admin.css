@@ -1,0 +1,33 @@
+.scfw-field-builder .scfw-col-reorder {
+	width: 42px;
+}
+
+.scfw-field-builder .scfw-handle {
+	color: #787c82;
+	cursor: grab;
+	font-weight: bold;
+}
+
+.scfw-field-builder .scfw-handle:hover {
+	color: #1d2327;
+}
+
+.scfw-field-builder .scfw-dragging {
+	opacity: 0.4;
+}
+
+.scfw-field-builder input[type="text"] {
+	width: 100%;
+}
+
+.scfw-add-field {
+	margin-top: 12px;
+}
+
+.scfw-add-field select {
+	margin-right: 8px;
+}
+
+.scfw-add-field .button {
+	vertical-align: baseline;
+}

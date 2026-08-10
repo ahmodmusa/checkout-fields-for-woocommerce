@@ -141,22 +141,34 @@ final class FieldTransfer {
 
 		check_admin_referer( 'scfw_import' );
 
-		$file   = $_FILES['scfw_import_file'] ?? array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
-		$tmp_name = '';
+		$file = $_FILES['scfw_import_file'] ?? array(); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
-		if ( is_array( $file ) && isset( $file['tmp_name'] ) && is_string( $file['tmp_name'] ) && '' !== $file['tmp_name'] ) {
-			$tmp_name = $file['tmp_name'];
+		if ( ! is_array( $file ) || ( $file['error'] ?? UPLOAD_ERR_NO_FILE ) !== UPLOAD_ERR_OK ) {
+			self::redirect( 'import_failed', __( 'The configuration file upload failed.', 'checkout-fields-for-woocommerce' ), 'error' );
 		}
 
-		if ( '' === $tmp_name ) {
-			self::redirect( 'import_failed', __( 'No configuration file was uploaded.', 'checkout-fields-for-woocommerce' ), 'error' );
+		$tmp_name = isset( $file['tmp_name'] ) && is_string( $file['tmp_name'] ) ? $file['tmp_name'] : '';
+		$filename = isset( $file['name'] ) && is_scalar( $file['name'] ) ? sanitize_file_name( (string) $file['name'] ) : '';
+
+		if ( '' === $tmp_name || ! is_uploaded_file( $tmp_name ) || ! file_exists( $tmp_name ) || ! is_readable( $tmp_name ) ) {
+			self::redirect( 'import_failed', __( 'The uploaded configuration file could not be read.', 'checkout-fields-for-woocommerce' ), 'error' );
+		}
+
+		$file_type = wp_check_filetype( $filename, array( 'json' => 'application/json' ) );
+
+		if ( ! is_array( $file_type ) || 'json' !== ( $file_type['ext'] ?? '' ) ) {
+			self::redirect( 'import_failed', __( 'Only valid JSON configuration files can be imported.', 'checkout-fields-for-woocommerce' ), 'error' );
 		}
 
 		$content = file_get_contents( $tmp_name ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
 		$data    = json_decode( (string) $content, true );
 
-		if ( ! is_array( $data ) || ( $data['format'] ?? '' ) !== self::FORMAT ) {
+		if ( false === $content || JSON_ERROR_NONE !== json_last_error() || ! is_array( $data ) || ( $data['format'] ?? '' ) !== self::FORMAT ) {
 			self::redirect( 'import_failed', __( 'The uploaded file is not a valid configuration export.', 'checkout-fields-for-woocommerce' ), 'error' );
+		}
+
+		if ( array_diff( array( 'format', 'enabled', 'fields' ), array_keys( $data ) ) || ! self::isBooleanValue( $data['enabled'] ) ) {
+			self::redirect( 'import_failed', __( 'The uploaded configuration has an invalid structure.', 'checkout-fields-for-woocommerce' ), 'error' );
 		}
 
 		$imported = $data['fields'] ?? null;
@@ -197,16 +209,12 @@ final class FieldTransfer {
 	private static function validatedFields( array $fields ): ?array {
 		$clean = array();
 
-		foreach ( $fields as $id => $entry ) {
+		foreach ( $fields as $entry ) {
 			if ( ! is_array( $entry ) ) {
 				return null;
 			}
 
-			if ( ! isset( $entry['id'] ) ) {
-				$entry['id'] = (string) $id;
-			}
-
-			$normalized = FieldRepository::normalizeFieldEntry( $entry );
+			$normalized = FieldRepository::normalizeFieldEntry( $entry, true );
 
 			if ( null === $normalized || isset( $clean[ $normalized['id'] ] ) ) {
 				return null;
@@ -216,6 +224,18 @@ final class FieldTransfer {
 		}
 
 		return $clean;
+	}
+
+	/**
+	 * Check the scalar boolean representation used by the export format.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param mixed $value Value to check.
+	 * @return bool True when the value is an accepted boolean representation.
+	 */
+	private static function isBooleanValue( mixed $value ): bool {
+		return is_bool( $value ) || 0 === $value || 1 === $value || '0' === $value || '1' === $value;
 	}
 
 	/**

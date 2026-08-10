@@ -57,11 +57,13 @@ final class ClassicValidator {
 			return '';
 		}
 
+		$scalar = is_scalar( $value ) ? (string) $value : '';
+
 		return match ( $field->getType() ) {
 			FieldType::CHECKBOX => in_array( $value, array( 'on', '1', true, 1 ), true ),
-			FieldType::TEXTAREA => sanitize_textarea_field( (string) $value ),
-			FieldType::EMAIL    => sanitize_email( (string) $value ),
-			default             => sanitize_text_field( (string) $value ),
+			FieldType::TEXTAREA => sanitize_textarea_field( $scalar ),
+			FieldType::EMAIL    => sanitize_email( $scalar ),
+			default             => sanitize_text_field( $scalar ),
 		};
 	}
 

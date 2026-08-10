@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace SCFW\Frontend;
 
-use SCFW\Core\Field\DefaultFields;
 use SCFW\Core\Field\Field;
+use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Rendering\RenderContext;
 use SCFW\Core\Rendering\Renderer;
 
@@ -75,7 +75,7 @@ final class ClassicCheckout {
 	 * @return void
 	 */
 	public function renderFields( \WC_Checkout $checkout ): void {
-		foreach ( DefaultFields::get() as $field ) {
+		foreach ( FieldRepository::get() as $field ) {
 			$values  = array( $field->getId() => $this->submittedValue( array(), $field ) );
 			$context = new RenderContext( $values );
 			$result  = $this->renderer->render( $field, $context );
@@ -91,13 +91,13 @@ final class ClassicCheckout {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param array    $data   Posted checkout data.
+	 * @param array<string, mixed> $data   Posted checkout data.
 	 * @param \WP_Error $errors Error collection.
 	 *
 	 * @return void
 	 */
 	public function validateFields( array $data, \WP_Error $errors ): void {
-		foreach ( DefaultFields::get() as $field ) {
+		foreach ( FieldRepository::get() as $field ) {
 			$value  = $this->sanitizeField( $data, $field );
 			$result = $this->validator->validate( $field, $value );
 
@@ -119,12 +119,12 @@ final class ClassicCheckout {
 	 * @since 0.0.1
 	 *
 	 * @param \WC_Order $order WooCommerce order.
-	 * @param array     $data  Posted checkout data.
+	 * @param array<string, mixed> $data  Posted checkout data.
 	 *
 	 * @return void
 	 */
 	public function saveFields( \WC_Order $order, array $data ): void {
-		foreach ( DefaultFields::get() as $field ) {
+		foreach ( FieldRepository::get() as $field ) {
 			$value  = $this->sanitizeField( $data, $field );
 			$result = $this->validator->validate( $field, $value );
 
@@ -141,7 +141,7 @@ final class ClassicCheckout {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param array $data  Posted checkout data.
+	 * @param array<string, mixed> $data  Posted checkout data.
 	 * @param Field $field Field definition.
 	 *
 	 * @return string|bool Sanitized value.
@@ -159,7 +159,7 @@ final class ClassicCheckout {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param array $data  Posted checkout data.
+	 * @param array<string, mixed> $data  Posted checkout data.
 	 * @param Field $field Field definition.
 	 *
 	 * @return mixed Submitted or default value.

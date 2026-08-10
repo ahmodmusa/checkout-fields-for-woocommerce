@@ -9,8 +9,8 @@ declare(strict_types=1);
 
 namespace SCFW\Frontend;
 
-use SCFW\Core\Field\DefaultFields;
 use SCFW\Core\Field\Field;
+use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Field\FieldType;
 
 /**
@@ -78,7 +78,7 @@ final class BlockCheckout {
 	 * @return void
 	 */
 	public function registerField(): void {
-		foreach ( DefaultFields::get() as $field ) {
+		foreach ( FieldRepository::get() as $field ) {
 			woocommerce_register_additional_checkout_field( $this->settings( $field ) );
 		}
 	}
@@ -92,7 +92,7 @@ final class BlockCheckout {
 	 * @since 0.0.1
 	 *
 	 * @param mixed $value Submitted value.
-	 * @param array $field Registered field options.
+	 * @param array<string, mixed> $field Registered field options.
 	 *
 	 * @return string|bool Sanitized value.
 	 */
@@ -114,7 +114,7 @@ final class BlockCheckout {
 	 * @since 0.0.1
 	 *
 	 * @param mixed $value Submitted value.
-	 * @param array $field Registered field options.
+	 * @param array<string, mixed> $field Registered field options.
 	 *
 	 * @return bool|\WP_Error True when valid, an error otherwise.
 	 */
@@ -159,7 +159,7 @@ final class BlockCheckout {
 	public function saveFields( \WC_Order $order, \WP_REST_Request $request ): void {
 		$additional = isset( $request['additional_fields'] ) ? (array) $request['additional_fields'] : array();
 
-		foreach ( DefaultFields::get() as $field ) {
+		foreach ( FieldRepository::get() as $field ) {
 			$id = $this->blockId( $field );
 
 			if ( ! isset( $additional[ $id ] ) ) {
@@ -239,14 +239,14 @@ final class BlockCheckout {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param array $field Registered field options.
+	 * @param array<string, mixed> $field Registered field options.
 	 *
 	 * @return Field|null Matching Core field, or null when unknown.
 	 */
 	private function coreField( array $field ): ?Field {
 		$id = $field['id'] ?? '';
 
-		foreach ( DefaultFields::get() as $core ) {
+		foreach ( FieldRepository::get() as $core ) {
 			if ( $this->blockId( $core ) === $id ) {
 				return $core;
 			}

@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace SCFW\Admin;
 
+use SCFW\Core\Field\FieldRepository;
+use SCFW\Core\Field\FieldType;
+
 /**
  * Registers the plugin settings.
  *
@@ -65,26 +68,63 @@ final class Settings {
 			'scfw',
 			'scfw_general'
 		);
+
+		add_settings_section(
+			'scfw_fields',
+			__( 'Checkout Fields', 'checkout-fields-for-woocommerce' ),
+			'',
+			'scfw'
+		);
+
+		add_settings_field(
+			'fields',
+			__( 'Configured Checkout Fields', 'checkout-fields-for-woocommerce' ),
+			array( FieldBuilder::class, 'render' ),
+			'scfw',
+			'scfw_fields'
+		);
 	}
 
 	/**
 	 * Sanitize the plugin settings.
 	 *
-	 * Only sanitizes the currently implemented option: enabled.
+	 * Preserves the existing `enabled` behavior and normalizes the submitted
+	 * checkout field configuration (edits, add, remove and move actions) into
+	 * the canonical field configuration stored under `scfw_options.fields`.
 	 *
 	 * @since 0.0.1
 	 *
 	 * @param mixed $value Submitted settings value.
-	 * @return array
+	 * @return array<string, mixed> Sanitized settings.
 	 */
 	public static function sanitize( $value ): array {
 		$options = is_array( $value ) ? $value : array();
+		$current = get_option( self::OPTION_NAME, array() );
+		$current = is_array( $current ) ? $current : array();
 
-		if ( isset( $options['enabled'] ) ) {
-			$options['enabled'] = absint( $options['enabled'] );
+		$clean = array(
+			'enabled' => isset( $options['enabled'] ) ? absint( $options['enabled'] ) : ( isset( $current['enabled'] ) ? absint( $current['enabled'] ) : 0 ),
+		);
+
+		if ( isset( $options['fields'] ) && is_array( $options['fields'] ) ) {
+			$fields = self::normalizeFormFields( $options['fields'], $options );
+
+			if ( null === $fields ) {
+				add_settings_error(
+					'scfw',
+					'fields_invalid',
+					__( 'The checkout field configuration was invalid and was not saved.', 'checkout-fields-for-woocommerce' ),
+					'error'
+				);
+				$clean['fields'] = isset( $current['fields'] ) && is_array( $current['fields'] ) ? $current['fields'] : array();
+			} else {
+				$clean['fields'] = $fields;
+			}
+		} elseif ( isset( $current['fields'] ) && is_array( $current['fields'] ) ) {
+			$clean['fields'] = $current['fields'];
 		}
 
-		return $options;
+		return $clean;
 	}
 
 	/**
@@ -103,5 +143,123 @@ final class Settings {
 			<?php echo esc_html__( 'Enable the plugin.', 'checkout-fields-for-woocommerce' ); ?>
 		</label>
 		<?php
+	}
+
+	/**
+	 * Normalize the submitted field builder rows.
+	 *
+	 * Applies the move, remove and add actions signalled by the native form row
+	 * buttons, then delegates the schema normalization to the Core field
+	 * repository. The resulting canonical config preserves the submitted row
+	 * order, which is the configured checkout order.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<array-key, mixed> $options  Submitted form fields.
+	 * @param array<array-key, mixed> $settings Whole submitted settings value.
+	 *
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}>|null Canonical field configuration, or null when invalid.
+	 */
+	private static function normalizeFormFields( array $options, array $settings ): ?array {
+		$rows = self::applyMove( $options );
+
+		foreach ( $rows as $id => $row ) {
+			if ( is_array( $row ) && ! empty( $row['remove'] ) ) {
+				unset( $rows[ $id ] );
+			}
+		}
+
+		if ( ! self::appendNewField( $rows, $settings ) ) {
+			return null;
+		}
+
+		return FieldRepository::validateFields( array_values( $rows ) );
+	}
+
+	/**
+	 * Apply the move action of a single row button.
+	 *
+	 * Only the clicked row carries a move marker. The row is swapped with its
+	 * neighbor in the submitted order, which after a drag-and-drop reorder is
+	 * the currently displayed order.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<array-key, mixed> $options Submitted form fields.
+	 *
+	 * @return array<int, mixed> Rows with the move applied.
+	 */
+	private static function applyMove( array $options ): array {
+		$rows   = array_values( $options );
+		$count  = count( $rows );
+		$target = null;
+		$swap   = null;
+
+		foreach ( $rows as $index => $row ) {
+			if ( ! is_array( $row ) || empty( $row['move'] ) ) {
+				continue;
+			}
+
+			$swap   = $index;
+			$target = 'up' === $row['move'] ? $index - 1 : $index + 1;
+			break;
+		}
+
+		if ( null !== $swap && null !== $target && $target >= 0 && $target < $count ) {
+			$tmp        = $rows[ $swap ];
+			$rows[ $swap ]   = $rows[ $target ];
+			$rows[ $target ] = $tmp;
+		}
+
+		return $rows;
+	}
+
+	/**
+	 * Append a new field entry when the add action was submitted.
+	 *
+	 * A unique id is derived from the submitted label and checked against the
+	 * existing row ids so the new `_scfw_` meta key can never collide.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<int, mixed>     $rows     Rows being normalized.
+	 * @param array<array-key, mixed> $settings Whole submitted settings value.
+	 *
+	 * @return bool True when no add request was made or the new field is valid.
+	 */
+	private static function appendNewField( array &$rows, array $settings ): bool {
+		if ( empty( $settings['add'] ) || ! is_array( $settings['new_field'] ?? null ) ) {
+			return empty( $settings['add'] );
+		}
+
+		$label = '';
+
+		if ( isset( $settings['new_field']['label'] ) && is_scalar( $settings['new_field']['label'] ) ) {
+			$label = sanitize_text_field( (string) $settings['new_field']['label'] );
+		}
+
+		$type = isset( $settings['new_field']['type'] ) && is_scalar( $settings['new_field']['type'] ) ? (string) $settings['new_field']['type'] : '';
+
+		if ( '' === $label || null === FieldType::tryFrom( $type ) ) {
+			return false;
+		}
+
+		$existing = array();
+
+		foreach ( $rows as $row ) {
+			if ( is_array( $row ) && isset( $row['id'] ) && is_scalar( $row['id'] ) ) {
+				$existing[ sanitize_key( (string) $row['id'] ) ] = true;
+			}
+		}
+
+		$rows[] = array(
+			'id'       => FieldRepository::generateId( $label, $existing ),
+			'label'    => $label,
+			'type'     => $type,
+			'required' => false,
+			'enabled'  => true,
+		);
+
+		return true;
 	}
 }

@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SCFW\Core;
 
 use SCFW\Admin\AdminMenu;
+use SCFW\Admin\FieldTransfer;
 use SCFW\Admin\OrderDisplay;
 use SCFW\Admin\Settings;
 use SCFW\Frontend\BlockCheckoutBootstrap;
@@ -37,6 +38,9 @@ final class HookRegistrar {
 	public static function register(): void {
 		add_action( 'admin_menu', array( AdminMenu::class, 'register' ) );
 		add_action( 'admin_init', array( Settings::class, 'register' ) );
+		add_action( 'admin_enqueue_scripts', array( AdminMenu::class, 'enqueueAssets' ) );
+		add_action( 'admin_post_scfw_export', array( FieldTransfer::class, 'export' ) );
+		add_action( 'admin_post_scfw_import', array( FieldTransfer::class, 'import' ) );
 
 		if ( WooCommerceChecker::isAvailable() ) {
 			CheckoutBootstrap::register();

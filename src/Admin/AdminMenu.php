@@ -56,7 +56,33 @@ final class AdminMenu {
 				submit_button();
 				?>
 			</form>
+
+			<?php FieldTransfer::render(); ?>
 		</div>
 		<?php
+	}
+
+	/**
+	 * Enqueue the admin assets on the plugin settings page.
+	 *
+	 * Assets load only on the plugin page, never on the frontend or on other
+	 * admin screens.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param string $hook_suffix Current admin page hook.
+	 *
+	 * @return void
+	 */
+	public static function enqueueAssets( string $hook_suffix ): void {
+		if ( 'toplevel_page_scfw' !== $hook_suffix ) {
+			return;
+		}
+
+		$style_version = (string) filemtime( SCFW_PATH . 'assets/admin/admin.css' );
+		$script_version = (string) filemtime( SCFW_PATH . 'assets/admin/field-builder.js' );
+
+		wp_enqueue_style( 'scfw-admin', SCFW_URL . 'assets/admin/admin.css', array(), $style_version );
+		wp_enqueue_script( 'scfw-field-builder', SCFW_URL . 'assets/admin/field-builder.js', array(), $script_version, true );
 	}
 }
