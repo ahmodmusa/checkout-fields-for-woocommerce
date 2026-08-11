@@ -15,7 +15,9 @@ use SCFW\Admin\OrderDisplay;
 use SCFW\Admin\Settings;
 use SCFW\Frontend\BlockCheckoutBootstrap;
 use SCFW\Frontend\CheckoutBootstrap;
+use SCFW\Frontend\NativeCheckoutFieldSuppression;
 use SCFW\Frontend\OrderEmail;
+use SCFW\Frontend\OrderMyAccount;
 use SCFW\Frontend\OrderThankYou;
 use SCFW\Services\WooCommerceChecker;
 
@@ -47,8 +49,10 @@ final class HookRegistrar {
 		if ( WooCommerceChecker::isAvailable() ) {
 			CheckoutBootstrap::register();
 			BlockCheckoutBootstrap::register();
+			NativeCheckoutFieldSuppression::register();
 			OrderDisplay::register();
 			OrderEmail::register();
+			OrderMyAccount::register();
 			OrderThankYou::register();
 		}
 	}
