@@ -16,6 +16,7 @@ use SCFW\Admin\Settings;
 use SCFW\Frontend\BlockCheckoutBootstrap;
 use SCFW\Frontend\CheckoutBootstrap;
 use SCFW\Frontend\OrderEmail;
+use SCFW\Frontend\OrderThankYou;
 use SCFW\Services\WooCommerceChecker;
 
 /**
@@ -48,6 +49,7 @@ final class HookRegistrar {
 			BlockCheckoutBootstrap::register();
 			OrderDisplay::register();
 			OrderEmail::register();
+			OrderThankYou::register();
 		}
 	}
 }
