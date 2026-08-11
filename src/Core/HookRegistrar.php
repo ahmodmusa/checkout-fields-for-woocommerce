@@ -19,6 +19,7 @@ use SCFW\Frontend\NativeCheckoutFieldSuppression;
 use SCFW\Frontend\OrderEmail;
 use SCFW\Frontend\OrderMyAccount;
 use SCFW\Frontend\OrderThankYou;
+use SCFW\REST\OrderResponse;
 use SCFW\Services\WooCommerceChecker;
 
 /**
@@ -54,6 +55,7 @@ final class HookRegistrar {
 			OrderEmail::register();
 			OrderMyAccount::register();
 			OrderThankYou::register();
+			OrderResponse::register();
 		}
 	}
 }
