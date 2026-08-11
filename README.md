@@ -15,6 +15,10 @@ Implemented functionality:
 - **Rendering Foundation** – the `Renderer` contract shared by Classic and Block Checkout, `RenderContext`/`RenderResult` value objects, and the renderer factory.
 - **Checkout Integration** – configurable Classic and Block Checkout adapters with shared validation and `_scfw_` order metadata.
 - **Admin Order Display** – escaped, capability-protected current and historical checkout values through WooCommerce order APIs.
+- **Customer Emails** – escaped checkout-field values in customer and administrative WooCommerce order emails.
+- **Thank You Page** – canonical escaped checkout-field presentation on the WooCommerce order-received surface.
+- **My Account** – authorized checkout-field presentation in the customer's WooCommerce order view.
+- **REST Order Response** – additive `scfw_fields` data on the existing administrator/shop-manager WooCommerce order REST response, using HPOS-safe order APIs.
 
 The global `scfw_options['enabled']` setting controls whether configured fields render, validate, register, or save. The administration page remains available when the feature is disabled.
 

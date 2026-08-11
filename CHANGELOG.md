@@ -23,6 +23,14 @@ All notable changes to this project will be documented in this file.
 - Shared Core Validator reused by both Classic and Block Checkout; no duplicated validation logic.
 - Documented the adapter-level type mapping decision in the architecture doc.
 
+### Added (Phase 5 — Order Integration)
+- Reusable `OrderFieldPresentation` service for ordered, enabled, non-empty SCFW order values.
+- Customer and administrative WooCommerce order email presentation with escaped output.
+- Thank You / order-received presentation with canonical SCFW output and namespace-specific native-field suppression.
+- Authorized My Account order presentation with namespace-specific native Additional Checkout Fields suppression.
+- Additive `scfw_fields` property on the existing WooCommerce `/wc/v3/orders/<id>` response for administrator and shop-manager REST consumers.
+- HPOS-safe order presentation through WooCommerce order APIs without new metadata or storage.
+
 ### Changed
 - Configured PHPCS to match the frozen PSR-4/PSR-12 architecture rather than forcing legacy WordPress naming conventions.
 - Updated README and CHANGELOG to describe the implemented foundations.

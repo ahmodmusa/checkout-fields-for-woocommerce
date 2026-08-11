@@ -188,6 +188,10 @@ fields.
 
 # Phase 5 — Order Integration
 
+Status
+
+Completed at `bee9aabf0e09f2a9e87d412db6255336890be94e`.
+
 ```
 T0050 Save Order Meta
         ↓
@@ -198,7 +202,25 @@ T0052 Customer Emails
 T0053 Thank You Page
         ↓
 T0054 My Account
+        ↓
+T0055 REST API Support
 ```
+
+Phase 5 planning reconciliation:
+
+- `T0050` and `T0051` are already satisfied by the frozen Phase 3/4 order
+  persistence and Admin Order Display baseline. They require verification, not
+  reimplementation.
+- REST API Support is included in the official Phase 5 roadmap and is assigned
+  the next unused identifier, `T0055`.
+- The repository also contains a historical `T0040–T0044` identifier conflict
+  between the Block Checkout and Administration contracts. This conflict is
+  not silently renumbered by Phase 5.
+
+- T0052 Customer Emails, T0053 Thank You Page, T0054 My Account, and T0055 REST
+  API Support are implemented through thin WooCommerce integrations. T0055
+  extends the existing `/wc/v3/orders/<id>` response with additive
+  `scfw_fields` data for administrator and shop-manager consumers.
 
 ---
 
