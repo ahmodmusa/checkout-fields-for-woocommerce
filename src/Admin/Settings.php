@@ -158,10 +158,12 @@ final class Settings {
 	 * @param array<array-key, mixed> $options  Submitted form fields.
 	 * @param array<array-key, mixed> $settings Whole submitted settings value.
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}>|null Canonical field configuration, or null when invalid.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}>|null Canonical field configuration, or null when invalid.
 	 */
 	private static function normalizeFormFields( array $options, array $settings ): ?array {
 		$rows = self::applyMove( $options );
+
+		self::preserveProRules( $rows );
 
 		foreach ( $rows as $id => $row ) {
 			if ( is_array( $row ) && ! empty( $row['remove'] ) ) {
@@ -174,6 +176,40 @@ final class Settings {
 		}
 
 		return FieldRepository::validateFields( array_values( $rows ) );
+	}
+
+	/**
+	 * Carry over stored Pro rules for rows that do not submit a rules value.
+	 *
+	 * The Free field builder has no rules control, so a saved field would
+	 * otherwise strip an existing `rules` value created by the Pro extension.
+	 * Free never evaluates these rules; it only preserves them verbatim so
+	 * Pro data survives an ordinary Free settings save without corruption.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<int, mixed> $rows Rows being normalized.
+	 *
+	 * @return void
+	 */
+	private static function preserveProRules( array &$rows ): void {
+		$current = get_option( self::OPTION_NAME, array() );
+		$current = is_array( $current ) && isset( $current['fields'] ) && is_array( $current['fields'] ) ? $current['fields'] : array();
+
+		foreach ( $rows as &$row ) {
+			if ( ! is_array( $row ) || array_key_exists( 'rules', $row ) ) {
+				continue;
+			}
+
+			$id = isset( $row['id'] ) && is_scalar( $row['id'] ) ? sanitize_key( (string) $row['id'] ) : '';
+
+			$stored = '' !== $id ? ( $current[ $id ] ?? null ) : null;
+
+			if ( is_array( $stored ) && isset( $stored['rules'] ) ) {
+				$row['rules'] = $stored['rules'];
+			}
+		}
+		unset( $row );
 	}
 
 	/**

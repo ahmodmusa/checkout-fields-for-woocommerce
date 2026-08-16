@@ -13,6 +13,7 @@ use SCFW\Core\Field\Field;
 use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Rendering\RenderContext;
 use SCFW\Core\Rendering\Renderer;
+use SCFW\Services\FieldVisibility;
 
 /**
  * Coordinates the Classic Checkout render, validate and save flow.
@@ -75,7 +76,13 @@ final class ClassicCheckout {
 	 * @return void
 	 */
 	public function renderFields( \WC_Checkout $checkout ): void {
+		$config = FieldRepository::config();
+
 		foreach ( FieldRepository::get() as $field ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+				continue;
+			}
+
 			$values  = array( $field->getId() => $this->submittedValue( array(), $field ) );
 			$context = new RenderContext( $values );
 			$result  = $this->renderer->render( $field, $context );
@@ -97,7 +104,13 @@ final class ClassicCheckout {
 	 * @return void
 	 */
 	public function validateFields( array $data, \WP_Error $errors ): void {
+		$config = FieldRepository::config();
+
 		foreach ( FieldRepository::get() as $field ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+				continue;
+			}
+
 			$value  = $this->sanitizeField( $data, $field );
 			$result = $this->validator->validate( $field, $value );
 
@@ -124,7 +137,13 @@ final class ClassicCheckout {
 	 * @return void
 	 */
 	public function saveFields( \WC_Order $order, array $data ): void {
+		$config = FieldRepository::config();
+
 		foreach ( FieldRepository::get() as $field ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+				continue;
+			}
+
 			$value  = $this->sanitizeField( $data, $field );
 			$result = $this->validator->validate( $field, $value );
 

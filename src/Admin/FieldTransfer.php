@@ -204,7 +204,7 @@ final class FieldTransfer {
 	 *
 	 * @param array<array-key, mixed> $fields Imported field configuration.
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}>|null Canonical field configuration, or null when invalid.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}>|null Canonical field configuration, or null when invalid.
 	 */
 	private static function validatedFields( array $fields ): ?array {
 		$clean = array();

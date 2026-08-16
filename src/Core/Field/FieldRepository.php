@@ -124,7 +124,7 @@ final class FieldRepository {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}> Field configuration.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}> Field configuration.
 	 */
 	public static function config(): array {
 		$options = get_option( self::OPTION_NAME, array() );
@@ -147,7 +147,7 @@ final class FieldRepository {
 	 *
 	 * @param mixed $fields Raw field configuration.
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}> Field configuration.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}> Field configuration.
 	 */
 	public static function sanitizeFields( mixed $fields ): array {
 		$clean = array();
@@ -179,7 +179,7 @@ final class FieldRepository {
 	 * @since 0.0.1
 	 *
 	 * @param mixed $fields Field configuration to validate.
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}>|null Normalized fields, or null when invalid.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}>|null Normalized fields, or null when invalid.
 	 */
 	public static function validateFields( mixed $fields ): ?array {
 		if ( ! is_array( $fields ) ) {
@@ -213,7 +213,7 @@ final class FieldRepository {
 	 * @param mixed $entry  Raw field configuration entry.
 	 * @param bool  $strict Require every schema key and strict boolean values.
 	 *
-	 * @return array{id: string, label: string, type: string, required: bool, enabled: bool}|null Normalized entry, or null when invalid.
+	 * @return array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}|null Normalized entry, or null when invalid.
 	 */
 	public static function normalizeFieldEntry( mixed $entry, bool $strict = false ): ?array {
 		if ( ! is_array( $entry ) ) {
@@ -259,12 +259,33 @@ final class FieldRepository {
 			return null;
 		}
 
+		$rules = array();
+
+		if ( array_key_exists( 'rules', $entry ) ) {
+			$raw = $entry['rules'];
+
+			if ( is_array( $raw ) ) {
+				$rules = $raw;
+			} elseif ( is_string( $raw ) ) {
+				$decoded = json_decode( $raw, true );
+
+				if ( is_array( $decoded ) ) {
+					$rules = $decoded;
+				} elseif ( $strict ) {
+					return null;
+				}
+			} elseif ( $strict ) {
+				return null;
+			}
+		}
+
 		return array(
 			'id'       => $id,
 			'label'    => $label,
 			'type'     => $type->value,
 			'required' => ! empty( $entry['required'] ),
 			'enabled'  => ! empty( $entry['enabled'] ) || ! isset( $entry['enabled'] ),
+			'rules'    => $rules,
 		);
 	}
 
@@ -320,7 +341,7 @@ final class FieldRepository {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool}> Field configuration.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}> Field configuration.
 	 */
 	private static function defaultConfig(): array {
 		$config = array();
@@ -332,6 +353,7 @@ final class FieldRepository {
 				'type'     => $field->getType()->value,
 				'required' => $field->getRequired(),
 				'enabled'  => true,
+				'rules'    => array(),
 			);
 		}
 

@@ -12,6 +12,7 @@ namespace SCFW\Frontend;
 use SCFW\Core\Field\Field;
 use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Field\FieldType;
+use SCFW\Services\FieldVisibility;
 
 /**
  * Coordinates the WooCommerce Block Checkout integration.
@@ -78,7 +79,13 @@ final class BlockCheckout {
 	 * @return void
 	 */
 	public function registerField(): void {
+		$config = FieldRepository::config();
+
 		foreach ( FieldRepository::get() as $field ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+				continue;
+			}
+
 			woocommerce_register_additional_checkout_field( $this->settings( $field ) );
 		}
 	}
@@ -158,8 +165,13 @@ final class BlockCheckout {
 	 */
 	public function saveFields( \WC_Order $order, \WP_REST_Request $request ): void {
 		$additional = isset( $request['additional_fields'] ) ? (array) $request['additional_fields'] : array();
+		$config     = FieldRepository::config();
 
 		foreach ( FieldRepository::get() as $field ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+				continue;
+			}
+
 			$id = $this->blockId( $field );
 
 			if ( ! isset( $additional[ $id ] ) ) {
