@@ -22,7 +22,8 @@ final class CheckoutBootstrap {
 	/**
 	 * Register the WooCommerce Classic Checkout hooks.
 	 *
-	 * Render, validate and save are the only hooks registered. Nothing else.
+	 * Render, validate, save and asset loading are the only hooks registered.
+	 * Nothing else, so only the Classic Checkout path is touched.
 	 *
 	 * @since 0.0.1
 	 *
@@ -34,5 +35,6 @@ final class CheckoutBootstrap {
 		add_action( 'woocommerce_after_order_notes', array( $checkout, 'renderFields' ) );
 		add_action( 'woocommerce_after_checkout_validation', array( $checkout, 'validateFields' ), 10, 2 );
 		add_action( 'woocommerce_checkout_create_order', array( $checkout, 'saveFields' ), 10, 2 );
+		add_action( 'wp_enqueue_scripts', array( ClassicAssets::class, 'enqueueAssets' ) );
 	}
 }

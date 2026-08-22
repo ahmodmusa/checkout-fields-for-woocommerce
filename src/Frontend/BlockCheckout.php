@@ -91,6 +91,73 @@ final class BlockCheckout {
 	}
 
 	/**
+	 * Enqueue the Block Checkout date field enhancement script.
+	 *
+	 * Hooked to wp_enqueue_scripts. The Blocks Additional Checkout Fields API
+	 * supports text, select and checkbox only, so a Core DATE field renders
+	 * as a text input with a `data-scfw-type="date"` marker. This script
+	 * upgrades each marked input to a native date input, which the browser
+	 * renders as a real calendar picker, and reapplies the upgrade whenever
+	 * the Checkout block mounts a field again. It is idempotent and only
+	 * acts when the configured fields actually render on the page, so the
+	 * Classic Checkout and every other page stay untouched.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return void
+	 */
+	public function enqueueDateFieldScript(): void {
+		if ( is_admin() || ! is_checkout() ) {
+			return;
+		}
+
+		if ( ! self::hasVisibleDateField() ) {
+			return;
+		}
+
+		$script_version = (string) filemtime( SCFW_PATH . 'assets/frontend/block-checkout-date.js' );
+		$style_version  = (string) filemtime( SCFW_PATH . 'assets/frontend/block-checkout-date.css' );
+
+		wp_enqueue_style(
+			'scfw-block-checkout-date',
+			SCFW_URL . 'assets/frontend/block-checkout-date.css',
+			array(),
+			$style_version
+		);
+
+		wp_enqueue_script(
+			'scfw-block-checkout-date',
+			SCFW_URL . 'assets/frontend/block-checkout-date.js',
+			array(),
+			$script_version,
+			true
+		);
+	}
+
+	/**
+	 * Check whether at least one visible Core DATE field is configured.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return bool True when a visible DATE field exists.
+	 */
+	private static function hasVisibleDateField(): bool {
+		$config = FieldRepository::config();
+
+		foreach ( FieldRepository::get() as $field ) {
+			if ( FieldType::DATE !== $field->getType() ) {
+				continue;
+			}
+
+			if ( FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
 	 * Sanitize a submitted block checkout field value.
 	 *
 	 * Used as the official sanitize_callback. The registered field options
@@ -192,6 +259,19 @@ final class BlockCheckout {
 	/**
 	 * Build the Blocks API field settings from a Core field definition.
 	 *
+	 * Native options are attached when the field renders as a select on the
+	 * block. That covers Core SELECT fields and Core RADIO fields, which are
+	 * presented as a native select because the Blocks Additional Checkout
+	 * Fields API supports text, select and checkbox only (final Block radio
+	 * presentation limitation). The Core type and options stay untouched.
+	 *
+	 * A Core DATE field is registered as text with a `data-scfw-type="date"`
+	 * marker attribute because the Blocks API has no date type. The marker
+	 * survives registration (data attributes are allowed) and reaches the
+	 * rendered input, where the small block checkout script upgrades it to a
+	 * native date input and its calendar picker. The stored value format is
+	 * unchanged.
+	 *
 	 * @since 0.0.1
 	 *
 	 * @param Field $field Core field definition.
@@ -199,7 +279,7 @@ final class BlockCheckout {
 	 * @return array<string, mixed> Blocks API field options.
 	 */
 	private function settings( Field $field ): array {
-		return array(
+		$settings = array(
 			'id'                => $this->blockId( $field ),
 			'label'             => $field->getLabel(),
 			'optionalLabel'     => $field->getLabel(),
@@ -209,15 +289,56 @@ final class BlockCheckout {
 			'sanitize_callback' => array( $this, 'sanitizeField' ),
 			'validate_callback' => array( $this, 'validateField' ),
 		);
+
+		if ( FieldType::SELECT === $field->getType() || FieldType::RADIO === $field->getType() ) {
+			$settings['options'] = $this->blockOptions( $field );
+		}
+
+		if ( FieldType::DATE === $field->getType() ) {
+			$settings['attributes'] = array( 'data-scfw-type' => 'date' );
+		}
+
+		return $settings;
+	}
+
+	/**
+	 * Map the Core choice options to the Blocks select options format.
+	 *
+	 * Used for Core SELECT fields and for Core RADIO fields, which are
+	 * presented as a native select on the block. Core options are single
+	 * strings that act as both the submitted value and the displayed label.
+	 * The Blocks API requires each select option to be an array with value
+	 * and label properties, so the same string is used for both.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param Field $field Core field definition.
+	 *
+	 * @return array<int, array{value: string, label: string}> Blocks select options.
+	 */
+	private function blockOptions( Field $field ): array {
+		$options = array();
+
+		foreach ( $field->getOptions() as $option ) {
+			$options[] = array(
+				'value' => $option,
+				'label' => $option,
+			);
+		}
+
+		return $options;
 	}
 
 	/**
 	 * Map a Core field type to a type the Blocks API supports.
 	 *
-	 * The Blocks API supports text, select and checkbox only. The Core
-	 * TEXTAREA type is mapped to text so the Core definition remains
-	 * unchanged while the block gets a compatible control. This is an
-	 * adapter-level mapping and never changes the Core FieldType.
+	 * The Blocks Additional Checkout Fields API supports text, select and
+	 * checkbox only, so a native radio is impossible (final Block radio
+	 * presentation limitation). Core RADIO fields are presented as a native
+	 * select using the configured options; the submitted value stays the
+	 * selected option string. TEXTAREA maps to text. This is an
+	 * adapter-level presentation mapping and never changes the Core FieldType
+	 * or the shared Validator.
 	 *
 	 * @since 0.0.1
 	 *
@@ -228,6 +349,7 @@ final class BlockCheckout {
 	private function blockType( Field $field ): string {
 		return match ( $field->getType() ) {
 			FieldType::SELECT   => 'select',
+			FieldType::RADIO    => 'select',
 			FieldType::CHECKBOX => 'checkbox',
 			default             => 'text',
 		};
