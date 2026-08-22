@@ -45,6 +45,18 @@ Admin        Checkout
                 Fields
 ```
 
+REST response integrations are coordinated by Core and consume Services:
+
+```
+Core
+ │
+ ▼
+REST
+ │
+ ▼
+Services
+```
+
 ---
 
 # Plugin

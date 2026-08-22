@@ -1,0 +1,98 @@
+/**
+ * Classic checkout SCFW field presentation.
+ *
+ * SCFW Classic fields render through woocommerce_form_field(), so they keep
+ * native WooCommerce markup, classes and accessibility attributes. Every rule
+ * here is scoped to SCFW rows only and exists solely to close a genuine
+ * compatibility gap where the active Store/WooCommerce theme would otherwise
+ * not style SCFW Select/Radio/Checkbox identically to its native checkout
+ * controls. Text and textarea inherit natively and are left untouched beyond
+ * description/textarea helpers.
+ *
+ * Scope: every selector starts with `form.checkout .form-row.scfw-*`.
+ * Block Checkout is not touched.
+ */
+
+/* Helper description (text/textarea) -- visible muted note. */
+form.checkout .form-row.scfw-field .woocommerce-input-wrapper > .description {
+	display: block;
+	margin: 0.4em 0 0;
+	font-size: 0.85em;
+	line-height: 1.5;
+	opacity: 0.75;
+}
+
+/* Textarea -- allow vertical resizing without imposing height. */
+form.checkout .form-row.scfw-field textarea.input-text {
+	resize: vertical;
+}
+
+/* Select -- match native WooCommerce checkout select (forms.css). */
+form.checkout .form-row.scfw-select select.select {
+	box-sizing: border-box;
+	display: block;
+	width: 100%;
+	margin: 0;
+	padding: 0.5em;
+	padding-right: 3em;
+	font-family: inherit;
+	font-weight: 400;
+	letter-spacing: normal;
+	line-height: normal;
+	color: var(--wc-form-color-text, #000);
+	background-color: var(--wc-form-color-background, #fff);
+	border: var(--wc-form-border-width, 1px) solid var(--wc-form-border-color, rgba(32, 7, 7, 0.8));
+	border-radius: var(--wc-form-border-radius, 4px);
+	appearance: none;
+	cursor: pointer;
+	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItY2hldnJvbi1kb3duIj48cG9seWxpbmUgcG9pbnRzPSI2IDkgMTIgMTUgMTggOSI+PC9wb2x5bGluZT48L3N2Zz4=);
+	background-repeat: no-repeat;
+	background-position: right 0.75em center;
+	background-size: 1em;
+}
+
+form.checkout .form-row.scfw-select select.select:focus {
+	border-color: currentColor;
+	outline: none;
+}
+
+/* Checkbox -- match native WooCommerce inline checkbox. */
+form.checkout .form-row.scfw-checkbox label.checkbox {
+	display: inline;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+form.checkout .form-row.scfw-checkbox label.checkbox .input-checkbox {
+	display: inline;
+	width: auto;
+	height: auto;
+	margin: -2px 8px 0 0;
+	vertical-align: middle;
+	text-align: center;
+}
+
+/* Radio -- native vertical choice list without cards. */
+form.checkout .form-row.scfw-radio input[type="radio"] {
+	display: inline;
+	width: auto;
+	height: auto;
+	margin: 0 0.5em 0 0;
+	vertical-align: middle;
+}
+
+form.checkout .form-row.scfw-radio label.radio {
+	display: inline;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+form.checkout .form-row.scfw-radio label.radio::after {
+	content: "";
+	display: block;
+	margin-bottom: 0.4em;
+}
+
+form.checkout .form-row.scfw-radio label.radio:last-child::after {
+	display: none;
+}

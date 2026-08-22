@@ -9,7 +9,7 @@ declare(strict_types=1);
 
 namespace SCFW\Admin;
 
-use SCFW\Core\Field\DefaultFields;
+use SCFW\Core\Field\FieldRepository;
 use WC_Order;
 
 /**
@@ -70,18 +70,48 @@ final class OrderDisplay {
 			return;
 		}
 
-		$rows = array();
+		$rows       = array();
+		$known      = array();
+		$metaValues = array();
 
-		foreach ( DefaultFields::get() as $field ) {
-			$value = $order->get_meta( self::META_PREFIX . $field->getId(), true );
+		foreach ( $order->get_meta_data() as $meta ) {
+			$data = $meta->get_data();
+			$key  = isset( $data['key'] ) && is_scalar( $data['key'] ) ? (string) $data['key'] : '';
 
-			if ( '' === $value ) {
+			if ( 0 !== strpos( $key, self::META_PREFIX ) ) {
+				continue;
+			}
+
+			$id = substr( $key, strlen( self::META_PREFIX ) );
+
+			if ( '' !== $id && isset( $data['value'] ) && is_scalar( $data['value'] ) ) {
+				$metaValues[ $id ] = (string) $data['value'];
+			}
+		}
+
+		foreach ( FieldRepository::all() as $field ) {
+			$id = $field->getId();
+			$known[ $id ] = true;
+
+			if ( ! isset( $metaValues[ $id ] ) || '' === $metaValues[ $id ] ) {
 				continue;
 			}
 
 			$rows[] = array(
 				'label' => $field->getLabel(),
-				'value' => (string) $value,
+				'value' => $metaValues[ $id ],
+			);
+			unset( $metaValues[ $id ] );
+		}
+
+		foreach ( $metaValues as $id => $value ) {
+			if ( '' === $value || isset( $known[ $id ] ) ) {
+				continue;
+			}
+
+			$rows[] = array(
+				'label' => ucwords( str_replace( '_', ' ', $id ) ),
+				'value' => $value,
 			);
 		}
 

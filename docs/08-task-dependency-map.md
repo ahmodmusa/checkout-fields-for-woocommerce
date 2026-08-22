@@ -45,7 +45,7 @@ T0004 Plugin Kernel
         ↓
 T0005 Boot Plugin
         ↓
-T0006 WooCommerce Dependency Checker
+T0006 WooCommerce Compatibility
         ↓
 T0007 Bootstrap Guard
 ```
@@ -54,20 +54,21 @@ T0007 Bootstrap Guard
 
 # Phase 1 — Bootstrap Framework
 
-Status
-
-Completed
-
 ```
-T0008 Hook Registrar
+
+T0008 Hook Registration
         ↓
-T0009 Connect Hook Registration
+T0009 Asset Registration
         ↓
-T0010 Admin Menu Framework
+T0010 Admin Bootstrap
         ↓
-T0011 Settings Page
+T0011 Checkout Bootstrap
         ↓
-T0012–T0015 Settings Foundation
+T0012 Block Checkout Bootstrap
+        ↓
+T0013 Settings Bootstrap
+        ↓
+T0014 Plugin Lifecycle Integration
 ```
 
 Nothing from Phase 2 may begin until Phase 1 is complete.
@@ -152,9 +153,44 @@ T0045 Import
 T0046 Export
 ```
 
+## Phase 4 Implementation Notes
+
+Configuration remains in the existing `scfw_options` option. Each ordered
+field entry contains:
+
+- `id` — sanitized lowercase identifier using letters, numbers, underscores, or hyphens.
+- `label` — non-empty sanitized display label.
+- `type` — one of the Core `FieldType` values: `text`, `textarea`, `email`, `tel`, `number`, `date`, `checkbox`, `radio`, or `select`.
+- `required` — boolean required state.
+- `enabled` — boolean field state.
+
+The entry order is the checkout order. The global `scfw_options['enabled']`
+setting controls whether configured fields render, validate, register, or save;
+the administration page remains available when it is disabled. A field with
+`enabled` false is not active in either checkout adapter.
+
+Import and export use the stable JSON format marker
+`checkout-fields-config-v1` and the top-level keys `format`, `enabled`, and
+`fields`. Imported files must contain a complete valid field schema. Exported
+configuration can be imported without changing configuration content; only the
+generated download filename contains a timestamp.
+
+Block Checkout uses WooCommerce's additional checkout field API. Core
+`textarea` fields map to the supported Block `text` control, while Classic
+Checkout continues to render the Core textarea type.
+
+Admin Order Display reads `_scfw_` values through the WooCommerce order API.
+Values remain visible after a field is disabled or removed, using the current
+field label when available and a readable identifier fallback for removed
+fields.
+
 ---
 
 # Phase 5 — Order Integration
+
+Status
+
+Completed at `bee9aabf0e09f2a9e87d412db6255336890be94e`.
 
 ```
 T0050 Save Order Meta
@@ -166,7 +202,25 @@ T0052 Customer Emails
 T0053 Thank You Page
         ↓
 T0054 My Account
+        ↓
+T0055 REST API Support
 ```
+
+Phase 5 planning reconciliation:
+
+- `T0050` and `T0051` are already satisfied by the frozen Phase 3/4 order
+  persistence and Admin Order Display baseline. They require verification, not
+  reimplementation.
+- REST API Support is included in the official Phase 5 roadmap and is assigned
+  the next unused identifier, `T0055`.
+- The repository also contains a historical `T0040–T0044` identifier conflict
+  between the Block Checkout and Administration contracts. This conflict is
+  not silently renumbered by Phase 5.
+
+- T0052 Customer Emails, T0053 Thank You Page, T0054 My Account, and T0055 REST
+  API Support are implemented through thin WooCommerce integrations. T0055
+  extends the existing `/wc/v3/orders/<id>` response with additive
+  `scfw_fields` data for administrator and shop-manager consumers.
 
 ---
 

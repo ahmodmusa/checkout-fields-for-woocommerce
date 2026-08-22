@@ -24,3 +24,6 @@ Thumbs.db
 # Build and packaging artifacts
 /dist/
 /build/
+
+# Future Pro package boundary (not part of the Free plugin)
+/pro/

@@ -10,9 +10,16 @@ declare(strict_types=1);
 namespace SCFW\Core;
 
 use SCFW\Admin\AdminMenu;
+use SCFW\Admin\FieldTransfer;
 use SCFW\Admin\OrderDisplay;
 use SCFW\Admin\Settings;
+use SCFW\Frontend\BlockCheckoutBootstrap;
 use SCFW\Frontend\CheckoutBootstrap;
+use SCFW\Frontend\NativeCheckoutFieldSuppression;
+use SCFW\Frontend\OrderEmail;
+use SCFW\Frontend\OrderMyAccount;
+use SCFW\Frontend\OrderThankYou;
+use SCFW\REST\OrderResponse;
 use SCFW\Services\WooCommerceChecker;
 
 /**
@@ -36,10 +43,19 @@ final class HookRegistrar {
 	public static function register(): void {
 		add_action( 'admin_menu', array( AdminMenu::class, 'register' ) );
 		add_action( 'admin_init', array( Settings::class, 'register' ) );
+		add_action( 'admin_enqueue_scripts', array( AdminMenu::class, 'enqueueAssets' ) );
+		add_action( 'admin_post_scfw_export', array( FieldTransfer::class, 'export' ) );
+		add_action( 'admin_post_scfw_import', array( FieldTransfer::class, 'import' ) );
 
 		if ( WooCommerceChecker::isAvailable() ) {
 			CheckoutBootstrap::register();
+			BlockCheckoutBootstrap::register();
+			NativeCheckoutFieldSuppression::register();
 			OrderDisplay::register();
+			OrderEmail::register();
+			OrderMyAccount::register();
+			OrderThankYou::register();
+			OrderResponse::register();
 		}
 	}
 }

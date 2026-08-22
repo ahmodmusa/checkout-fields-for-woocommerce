@@ -50,6 +50,7 @@ src/
 ├── Contracts/
 ├── Core/
 ├── Fields/
+├── REST/
 ├── Services/
 ├── Support/
 └── Validation/
@@ -187,6 +188,26 @@ Examples
 - OrderMetaService
 
 Services must remain independent.
+
+---
+
+## REST
+
+Purpose
+
+- WooCommerce REST response integrations approved by the architecture.
+
+Responsibilities
+
+- Register approved native REST extension points.
+- Adapt existing Service output to additive REST response data.
+
+Must NOT contain
+
+- Custom order storage.
+- Direct database access.
+- Custom authorization systems.
+- Duplicate field lookup or configuration logic.
 
 ---
 

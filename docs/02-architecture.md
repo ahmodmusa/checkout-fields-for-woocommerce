@@ -73,6 +73,7 @@ src/
 ├── Core/
 ├── Contracts/
 ├── Fields/
+├── REST/
 ├── Services/
 ├── Support/
 └── Validation/
@@ -123,6 +124,35 @@ Both must expose identical capabilities whenever technically possible.
 Checkout implementations communicate only with WooCommerce APIs.
 
 Business logic must never exist inside checkout implementations.
+
+---
+
+# REST Integration
+
+REST integrations are thin WooCommerce response adapters.
+
+REST integrations must:
+
+- Use existing WooCommerce REST extension points unless a new endpoint is explicitly approved.
+- Use WooCommerce order APIs and existing Services.
+- Preserve native WooCommerce authorization and response behavior.
+- Never expose generic order metadata or create a second data model.
+
+---
+
+# Adapter Type Mapping
+
+The Core field type and the UI control type may differ between checkout
+adapters when the target platform does not support the Core field type.
+
+This is an adapter-level compatibility mapping, not a Core architecture
+change. The Core Field definition and the FieldType enum are never modified
+for an adapter.
+
+For example, WooCommerce Blocks supports only the additional checkout field
+types text, select, and checkbox. The Block Checkout adapter maps the Core
+TEXTAREA type to the Blocks text type while the Classic Checkout adapter
+continues to render the Core TEXTAREA type unchanged.
 
 ---
 
