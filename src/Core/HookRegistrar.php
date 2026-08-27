@@ -42,6 +42,7 @@ final class HookRegistrar {
 	 */
 	public static function register(): void {
 		add_action( 'admin_menu', array( AdminMenu::class, 'register' ) );
+		add_action( 'admin_menu', array( AdminMenu::class, 'reorderSubmenu' ), 999 );
 		add_action( 'admin_init', array( Settings::class, 'register' ) );
 		add_action( 'admin_enqueue_scripts', array( AdminMenu::class, 'enqueueAssets' ) );
 		add_action( 'admin_post_scfw_export', array( FieldTransfer::class, 'export' ) );

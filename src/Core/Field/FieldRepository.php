@@ -124,7 +124,7 @@ final class FieldRepository {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}> Field configuration.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}> Field configuration.
 	 */
 	public static function config(): array {
 		$options = get_option( self::OPTION_NAME, array() );
@@ -147,7 +147,7 @@ final class FieldRepository {
 	 *
 	 * @param mixed $fields Raw field configuration.
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}> Field configuration.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}> Field configuration.
 	 */
 	public static function sanitizeFields( mixed $fields ): array {
 		$clean = array();
@@ -179,7 +179,7 @@ final class FieldRepository {
 	 * @since 0.0.1
 	 *
 	 * @param mixed $fields Field configuration to validate.
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}>|null Normalized fields, or null when invalid.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}>|null Normalized fields, or null when invalid.
 	 */
 	public static function validateFields( mixed $fields ): ?array {
 		if ( ! is_array( $fields ) ) {
@@ -205,15 +205,23 @@ final class FieldRepository {
 	 * Normalize a single field configuration entry.
 	 *
 	 * Applies the schema rules for a field entry: a valid id, a supported type
-	 * from the Core FieldType enum and a non-empty label. An invalid entry
-	 * resolves to null so callers can reject or skip it.
+	 * from the Core FieldType enum, a non-empty label and, in strict mode, a
+	 * checked boolean pair. The Free-only properties placeholder, description,
+	 * default and options are normalized with the Free schema rules; the opaque
+	 * Pro rules property is preserved verbatim and never evaluated here. An
+	 * invalid entry resolves to null so callers can reject or skip it.
+	 *
+	 * In strict mode a malformed entry rejects the whole configuration. The
+	 * runtime sanitizer stays tolerant: it skips new-key values that cannot be
+	 * normalized so the true schema enforcement happens once, at save/import
+	 * time, while a corrupted stored option can never break the checkout.
 	 *
 	 * @since 0.0.1
 	 *
 	 * @param mixed $entry  Raw field configuration entry.
-	 * @param bool  $strict Require every schema key and strict boolean values.
+	 * @param bool  $strict Require every schema key and strict property values.
 	 *
-	 * @return array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}|null Normalized entry, or null when invalid.
+	 * @return array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}|null Normalized entry, or null when invalid.
 	 */
 	public static function normalizeFieldEntry( mixed $entry, bool $strict = false ): ?array {
 		if ( ! is_array( $entry ) ) {
@@ -259,6 +267,30 @@ final class FieldRepository {
 			return null;
 		}
 
+		$placeholder = self::normalizeTextProperty( $entry, 'placeholder', $strict );
+
+		if ( null === $placeholder ) {
+			return null;
+		}
+
+		$description = self::normalizeTextProperty( $entry, 'description', $strict );
+
+		if ( null === $description ) {
+			return null;
+		}
+
+		$options = self::normalizeChoiceOptions( $entry, $type, $strict );
+
+		if ( null === $options ) {
+			return null;
+		}
+
+		$default = self::normalizeDefaultValue( $entry, $type, $options, $strict );
+
+		if ( null === $default ) {
+			return null;
+		}
+
 		$rules = array();
 
 		if ( array_key_exists( 'rules', $entry ) ) {
@@ -280,13 +312,193 @@ final class FieldRepository {
 		}
 
 		return array(
-			'id'       => $id,
-			'label'    => $label,
-			'type'     => $type->value,
-			'required' => ! empty( $entry['required'] ),
-			'enabled'  => ! empty( $entry['enabled'] ) || ! isset( $entry['enabled'] ),
-			'rules'    => $rules,
+			'id'          => $id,
+			'label'       => $label,
+			'type'        => $type->value,
+			'required'    => ! empty( $entry['required'] ),
+			'enabled'     => ! empty( $entry['enabled'] ) || ! isset( $entry['enabled'] ),
+			'placeholder' => $placeholder,
+			'description' => $description,
+			'default'     => $default,
+			'options'     => $options,
+			'rules'       => $rules,
 		);
+	}
+
+	/**
+	 * Normalize an optional text property of a field entry.
+	 *
+	 * Missing keys normalize to the empty string so old configurations without
+	 * the Free extras stay backward compatible. Only scalar values are accepted;
+	 * strict mode rejects non-scalar values so a malformed entry cannot be saved.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<array-key, mixed> $entry  Raw field configuration entry.
+	 * @param string                  $key    Property key (placeholder or description).
+	 * @param bool                    $strict Require every schema key and strict property values.
+	 *
+	 * @return string|null Normalized text, or null when strict and invalid.
+	 */
+	private static function normalizeTextProperty( array $entry, string $key, bool $strict ): ?string {
+		if ( ! array_key_exists( $key, $entry ) ) {
+			return '';
+		}
+
+		$value = $entry[ $key ];
+
+		if ( ! is_scalar( $value ) ) {
+			return $strict ? null : '';
+		}
+
+		return sanitize_text_field( (string) $value );
+	}
+
+	/**
+	 * Normalize the options property of a field entry.
+	 *
+	 * Options apply only to radio and select fields. For every other type the
+	 * payload is discarded; a checkbox with an options payload is rejected in
+	 * strict mode because Free checkboxes are a single boolean.
+	 *
+	 * For choice fields options must be an ordered, non-empty list of unique,
+	 * non-empty strings. Strict mode rejects empty, duplicate or non-scalar
+	 * option strings and associative payloads; the runtime sanitizer skips the
+	 * invalid values instead.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<array-key, mixed> $entry  Raw field configuration entry.
+	 * @param FieldType               $type   Field type.
+	 * @param bool                    $strict Require every schema key and strict property values.
+	 *
+	 * @return array<int, string>|null Normalized option list, or null when strict and invalid.
+	 */
+	private static function normalizeChoiceOptions( array $entry, FieldType $type, bool $strict ): ?array {
+		if ( ! array_key_exists( 'options', $entry ) ) {
+			return array();
+		}
+
+		$raw = $entry['options'];
+
+		if ( ! is_array( $raw ) ) {
+			return $strict ? null : array();
+		}
+
+		if ( array_values( $raw ) !== $raw ) {
+			if ( $strict ) {
+				return null;
+			}
+
+			$raw = array_values( $raw );
+		}
+
+		if ( FieldType::RADIO !== $type && FieldType::SELECT !== $type ) {
+			if ( $strict && FieldType::CHECKBOX === $type && 0 < count( $raw ) ) {
+				return null;
+			}
+
+			return array();
+		}
+
+		$options = array();
+
+		foreach ( $raw as $option ) {
+			if ( ! is_scalar( $option ) ) {
+				if ( $strict ) {
+					return null;
+				}
+
+				continue;
+			}
+
+			$option = sanitize_text_field( (string) $option );
+
+			if ( '' === $option ) {
+				if ( $strict ) {
+					return null;
+				}
+
+				continue;
+			}
+
+			if ( in_array( $option, $options, true ) ) {
+				if ( $strict ) {
+					return null;
+				}
+
+				continue;
+			}
+
+			$options[] = $option;
+		}
+
+		if ( $strict && 0 === count( $options ) ) {
+			return null;
+		}
+
+		return $options;
+	}
+
+	/**
+	 * Normalize the default property of a field entry.
+	 *
+	 * The default is validated against the field type and its options at admin
+	 * time. A checkbox accepts `1` and `0` only; a choice field default must be
+	 * one of the option strings; every other type accepts any scalar text.
+	 * Missing keys normalize to the empty string (no default).
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<array-key, mixed> $entry   Raw field configuration entry.
+	 * @param FieldType               $type    Field type.
+	 * @param array<int, string>      $options Normalized option list.
+	 * @param bool                    $strict  Require every schema key and strict property values.
+	 *
+	 * @return string|null Normalized default, or null when strict and invalid.
+	 */
+	private static function normalizeDefaultValue( array $entry, FieldType $type, array $options, bool $strict ): ?string {
+		if ( ! array_key_exists( 'default', $entry ) ) {
+			return '';
+		}
+
+		$value = $entry['default'];
+
+		if ( FieldType::CHECKBOX === $type ) {
+			if ( is_bool( $value ) ) {
+				return $value ? '1' : '0';
+			}
+
+			if ( is_scalar( $value ) && ( '' === (string) $value || '1' === (string) $value || '0' === (string) $value ) ) {
+				return (string) $value;
+			}
+
+			return $strict ? null : '';
+		}
+
+		if ( FieldType::RADIO === $type || FieldType::SELECT === $type ) {
+			if ( ! is_scalar( $value ) ) {
+				return $strict ? null : '';
+			}
+
+			$default = sanitize_text_field( (string) $value );
+
+			if ( '' === $default ) {
+				return '';
+			}
+
+			if ( ! in_array( $default, $options, true ) ) {
+				return $strict ? null : '';
+			}
+
+			return $default;
+		}
+
+		if ( ! is_scalar( $value ) ) {
+			return $strict ? null : '';
+		}
+
+		return sanitize_text_field( (string) $value );
 	}
 
 	/**
@@ -341,19 +553,23 @@ final class FieldRepository {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}> Field configuration.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}> Field configuration.
 	 */
 	private static function defaultConfig(): array {
 		$config = array();
 
 		foreach ( DefaultFields::get() as $field ) {
 			$config[ $field->getId() ] = array(
-				'id'       => $field->getId(),
-				'label'    => $field->getLabel(),
-				'type'     => $field->getType()->value,
-				'required' => $field->getRequired(),
-				'enabled'  => true,
-				'rules'    => array(),
+				'id'          => $field->getId(),
+				'label'       => $field->getLabel(),
+				'type'        => $field->getType()->value,
+				'required'    => $field->getRequired(),
+				'enabled'     => true,
+				'placeholder' => $field->getPlaceholder(),
+				'description' => $field->getDescription(),
+				'default'     => is_string( $field->getDefaultValue() ) ? $field->getDefaultValue() : '',
+				'options'     => array_values( $field->getOptions() ),
+				'rules'       => array(),
 			);
 		}
 
@@ -363,10 +579,14 @@ final class FieldRepository {
 	/**
 	 * Build a Field value object from normalized configuration.
 	 *
+	 * The normalized placeholder, description, options and default are passed
+	 * through to the Field so checkout validation and rendering consume the
+	 * same values that were validated at save/import time.
+	 *
 	 * @since 0.0.1
 	 *
 	 * @param string $id       Field id.
-	 * @param array{id: string, label: string, type: string, required: bool, enabled: bool} $settings Normalized field settings.
+	 * @param array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>} $settings Normalized field settings.
 	 *
 	 * @return Field Built field definition.
 	 */
@@ -375,7 +595,11 @@ final class FieldRepository {
 			$id,
 			(string) $settings['label'],
 			FieldType::tryFrom( (string) $settings['type'] ) ?? FieldType::TEXT,
-			(bool) $settings['required']
+			(bool) $settings['required'],
+			(string) $settings['placeholder'],
+			(string) $settings['description'],
+			is_array( $settings['options'] ?? null ) ? array_values( $settings['options'] ) : array(),
+			(string) $settings['default']
 		);
 	}
 }

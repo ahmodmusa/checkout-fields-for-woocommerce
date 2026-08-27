@@ -1,33 +1,867 @@
-.scfw-field-builder .scfw-col-reorder {
-	width: 42px;
+/* ======================================================================
+ * Checkout Fields for WooCommerce — Reference-Accurate Admin Design System
+ *
+ * Every selector is strictly scoped under .scfw-admin to avoid global
+ * wp-admin styling leakage.
+ * ====================================================================== */
+
+.scfw-admin {
+	/* Core Palette Extracted Directly from Reference */
+	--scfw-color-primary: #5925dc;
+	--scfw-color-primary-hover: #471db3;
+	--scfw-color-primary-soft: rgba(89, 37, 220, 0.08);
+	--scfw-color-primary-focus: rgba(89, 37, 220, 0.2);
+
+	/* Neutral Surfaces & Backgrounds */
+	--scfw-color-surface: #ffffff;
+	--scfw-color-page: #f8f9fc;
+	--scfw-color-border: #f0f2f6;
+	--scfw-color-border-card: #e5e7eb;
+	--scfw-color-border-hover: #cbd5e1;
+
+	/* Text Hierarchy */
+	--scfw-color-text: #111827;
+	--scfw-color-text-muted: #6b7280;
+	--scfw-color-text-subtle: #9ca3af;
+
+	/* Semantic Colors */
+	--scfw-color-danger: #ef4444;
+	--scfw-color-danger-hover: #dc2626;
+	--scfw-color-danger-bg: #fef2f2;
+	--scfw-color-success: #10b981;
+
+	/* Radius, Shadows & Transitions */
+	--scfw-radius-sm: 4px;
+	--scfw-radius-md: 8px;
+	--scfw-radius-lg: 12px;
+	--scfw-shadow-card: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.02);
+	--scfw-shadow-modal: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
+	--scfw-transition: all 0.15s ease-in-out;
+
+	margin: 16px 20px 0 2px;
+	color: var(--scfw-color-text);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
 }
 
-.scfw-field-builder .scfw-handle {
-	color: #787c82;
-	cursor: grab;
-	font-weight: bold;
+/* ----------------------------------------------------------------------
+ * Unified App Header & Reference Navigation Tabs
+ * ---------------------------------------------------------------------- */
+
+.scfw-app-header {
+	margin-bottom: 24px;
 }
 
-.scfw-field-builder .scfw-handle:hover {
-	color: #1d2327;
+.scfw-app-header__main {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	margin-bottom: 20px;
 }
 
-.scfw-field-builder .scfw-dragging {
-	opacity: 0.4;
+.scfw-app-title {
+	margin: 0 0 6px !important;
+	padding: 0 !important;
+	color: var(--scfw-color-text);
+	font-size: 28px !important;
+	font-weight: 700 !important;
+	line-height: 1.2 !important;
+	letter-spacing: -0.02em;
 }
 
-.scfw-field-builder input[type="text"] {
+.scfw-app-subtitle {
+	margin: 0;
+	color: var(--scfw-color-text-muted);
+	font-size: 14px;
+	line-height: 1.4;
+}
+
+/* Primary Purple Action Button (Matching Reference Top-Right Button) */
+.scfw-btn-primary,
+.scfw-admin .button.scfw-btn-primary,
+.scfw-admin .button-primary.scfw-btn-primary {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 8px 18px !important;
+	min-height: 38px;
+	background-color: var(--scfw-color-primary) !important;
+	border-color: var(--scfw-color-primary) !important;
+	border-radius: var(--scfw-radius-md) !important;
+	color: #ffffff !important;
+	font-size: 14px !important;
+	font-weight: 600 !important;
+	line-height: 20px !important;
+	box-shadow: 0 1px 2px rgba(89, 37, 220, 0.15) !important;
+	transition: var(--scfw-transition);
+	cursor: pointer;
+	text-decoration: none;
+}
+
+.scfw-btn-primary:hover,
+.scfw-btn-primary:focus,
+.scfw-admin .button.scfw-btn-primary:hover,
+.scfw-admin .button.scfw-btn-primary:focus {
+	background-color: var(--scfw-color-primary-hover) !important;
+	border-color: var(--scfw-color-primary-hover) !important;
+	color: #ffffff !important;
+	box-shadow: 0 2px 4px rgba(89, 37, 220, 0.25) !important;
+}
+
+.scfw-btn-primary .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	line-height: 16px;
+}
+
+/* Reference Horizontal Tabs */
+.scfw-nav-tabs {
+	display: flex;
+	align-items: center;
+	gap: 32px;
+	border-bottom: 1px solid var(--scfw-color-border);
+	padding: 0 0 2px;
+}
+
+.scfw-nav-tab {
+	position: relative;
+	padding: 8px 2px 14px;
+	color: var(--scfw-color-text);
+	font-size: 14px;
+	font-weight: 600;
+	text-decoration: none;
+	transition: var(--scfw-transition);
+	border: 0;
+	background: transparent;
+	cursor: pointer;
+}
+
+.scfw-nav-tab:hover {
+	color: var(--scfw-color-primary);
+}
+
+.scfw-nav-tab.is-active {
+	color: var(--scfw-color-primary);
+	font-weight: 700;
+}
+
+.scfw-nav-tab.is-active::after {
+	content: '';
+	position: absolute;
+	bottom: -1px;
+	left: 0;
+	right: 0;
+	height: 2.5px;
+	background-color: var(--scfw-color-primary);
+	border-radius: 2px;
+}
+
+/* Ensure WordPress Settings API form-table markup does not add unwanted indentation */
+.scfw-admin table.form-table {
+	display: block;
+	margin: 0;
 	width: 100%;
 }
 
+.scfw-admin table.form-table > tbody,
+.scfw-admin table.form-table > tbody > tr,
+.scfw-admin table.form-table > tbody > tr > td {
+	display: block;
+	padding: 0;
+	margin: 0;
+	width: 100%;
+	border: 0;
+}
+
+.scfw-admin table.form-table > tbody > tr > th[scope="row"],
+.scfw-admin table.form-table > tbody > tr > th:empty {
+	display: none !important;
+}
+
+/* ----------------------------------------------------------------------
+ * Main Fields Table Card (Exact Match to Reference Layout)
+ * ---------------------------------------------------------------------- */
+
+.scfw-table-card {
+	background: var(--scfw-color-surface);
+	border: 1px solid var(--scfw-color-border-card);
+	border-radius: var(--scfw-radius-lg);
+	box-shadow: var(--scfw-shadow-card);
+	overflow: hidden;
+	margin-bottom: 24px;
+}
+
+.scfw-fields-table {
+	width: 100%;
+	border-collapse: collapse;
+	text-align: left;
+	background: #ffffff;
+}
+
+.scfw-fields-table thead tr {
+	border-bottom: 1px solid var(--scfw-color-border);
+}
+
+.scfw-fields-table th {
+	padding: 16px 20px;
+	color: var(--scfw-color-text);
+	font-size: 13px;
+	font-weight: 600;
+	line-height: 1.4;
+	background: #fafbfc;
+	border: 0;
+}
+
+.scfw-fields-table td {
+	padding: 18px 20px;
+	vertical-align: middle;
+	border-bottom: 1px solid var(--scfw-color-border);
+	font-size: 14px;
+	border-top: 0;
+}
+
+.scfw-fields-table tbody tr:last-child td {
+	border-bottom: 0;
+}
+
+.scfw-fields-table tbody tr {
+	transition: background-color 0.15s ease;
+}
+
+.scfw-fields-table tbody tr:hover {
+	background-color: #fafbfc;
+}
+
+.scfw-fields-table tbody tr.scfw-field-row--disabled {
+	opacity: 0.75;
+}
+
+/* Table Column Widths & Typography */
+.scfw-col-handle {
+	width: 44px;
+	text-align: center;
+	padding-right: 8px !important;
+}
+
+.scfw-col-label {
+	min-width: 220px;
+}
+
+.scfw-row-label-text {
+	color: var(--scfw-color-text);
+	font-weight: 700;
+	font-size: 14px;
+}
+
+.scfw-col-type {
+	min-width: 140px;
+}
+
+.scfw-row-type-text {
+	color: var(--scfw-color-text);
+	font-weight: 400;
+}
+
+.scfw-col-location {
+	min-width: 140px;
+}
+
+.scfw-row-location-text {
+	color: var(--scfw-color-text);
+	font-weight: 400;
+}
+
+.scfw-col-required {
+	width: 110px;
+}
+
+.scfw-icon-check {
+	display: inline-flex;
+	align-items: center;
+	color: var(--scfw-color-primary);
+}
+
+.scfw-icon-dash {
+	color: var(--scfw-color-text-subtle);
+	font-size: 16px;
+	font-weight: 400;
+}
+
+.scfw-col-enabled {
+	width: 110px;
+}
+
+.scfw-col-actions {
+	width: 100px;
+}
+
+/* Drag Handle Icon */
+.scfw-drag-handle {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	cursor: grab;
+	padding: 4px;
+	opacity: 0.6;
+	transition: opacity 0.15s ease;
+}
+
+.scfw-drag-handle:hover {
+	opacity: 1;
+}
+
+.scfw-drag-handle:active {
+	cursor: grabbing;
+}
+
+/* Reference Purple iOS-Style Toggle Switch */
+.scfw-toggle-switch {
+	position: relative;
+	display: inline-block;
+	width: 44px;
+	height: 24px;
+	cursor: pointer;
+	vertical-align: middle;
+}
+
+.scfw-toggle-input {
+	position: absolute;
+	opacity: 0;
+	width: 0;
+	height: 0;
+	margin: 0;
+}
+
+.scfw-toggle-track {
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background-color: #cbd5e1;
+	border-radius: 999px;
+	transition: var(--scfw-transition);
+}
+
+.scfw-toggle-thumb {
+	position: absolute;
+	content: "";
+	height: 18px;
+	width: 18px;
+	left: 3px;
+	bottom: 3px;
+	background-color: white;
+	border-radius: 50%;
+	transition: var(--scfw-transition);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.scfw-toggle-input:checked + .scfw-toggle-track {
+	background-color: var(--scfw-color-primary);
+}
+
+.scfw-toggle-input:focus-visible + .scfw-toggle-track {
+	box-shadow: 0 0 0 3px var(--scfw-color-primary-focus);
+}
+
+.scfw-toggle-input:checked + .scfw-toggle-track .scfw-toggle-thumb {
+	transform: translateX(20px);
+}
+
+/* Action Buttons (Pencil Edit & Trash Delete) */
+.scfw-actions-wrap {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.scfw-action-btn {
+	background: transparent;
+	border: 0;
+	padding: 4px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: var(--scfw-radius-sm);
+	transition: var(--scfw-transition);
+}
+
+.scfw-action-btn--edit:hover,
+.scfw-action-btn--edit:focus {
+	background-color: var(--scfw-color-primary-soft);
+}
+
+.scfw-action-btn--delete:hover,
+.scfw-action-btn--delete:focus {
+	background-color: var(--scfw-color-danger-bg);
+}
+
+/* Empty row state */
+.scfw-empty-cell {
+	text-align: center;
+	padding: 40px !important;
+	color: var(--scfw-color-text-muted);
+}
+
+/* ----------------------------------------------------------------------
+ * Bottom Summary Bar (Matching Reference Footer Icons & Badges)
+ * ---------------------------------------------------------------------- */
+
+.scfw-summary-bar {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 36px;
+	margin: 28px 0 16px;
+}
+
+.scfw-summary-item {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font-size: 14px;
+	font-weight: 500;
+	color: var(--scfw-color-text);
+}
+
+.scfw-summary-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	background-color: var(--scfw-color-primary);
+	color: #ffffff;
+	flex-shrink: 0;
+}
+
+.scfw-summary-icon--location {
+	background: transparent;
+	color: var(--scfw-color-primary);
+	width: auto;
+	height: auto;
+}
+
+/* ----------------------------------------------------------------------
+ * Modal / Drawer Editor for Advanced Field Attributes
+ * ---------------------------------------------------------------------- */
+
+.scfw-modal-backdrop {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	background: rgba(17, 24, 39, 0.4);
+	backdrop-filter: blur(2px);
+	z-index: 100000;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 20px;
+}
+
+.scfw-modal-backdrop[hidden] {
+	display: none;
+}
+
+.scfw-modal-container {
+	background: #ffffff;
+	border-radius: var(--scfw-radius-lg);
+	box-shadow: var(--scfw-shadow-modal);
+	width: 100%;
+	max-width: 600px;
+	max-height: 85vh;
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	animation: scfwFadeIn 0.2s ease-out;
+}
+
+@keyframes scfwFadeIn {
+	from { opacity: 0; transform: scale(0.97); }
+	to { opacity: 1; transform: scale(1); }
+}
+
+.scfw-modal-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 20px 24px;
+	border-bottom: 1px solid var(--scfw-color-border);
+}
+
+.scfw-modal-header h2 {
+	margin: 0;
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--scfw-color-text);
+}
+
+.scfw-modal-close {
+	background: transparent;
+	border: 0;
+	cursor: pointer;
+	color: var(--scfw-color-text-muted);
+	padding: 4px;
+	border-radius: var(--scfw-radius-sm);
+}
+
+.scfw-modal-close:hover {
+	color: var(--scfw-color-text);
+	background: #f1f5f9;
+}
+
+.scfw-modal-body {
+	padding: 24px;
+	overflow-y: auto;
+	flex: 1;
+}
+
+.scfw-modal-footer {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 12px;
+	padding: 16px 24px;
+	border-top: 1px solid var(--scfw-color-border);
+	background: #fafbfc;
+}
+
+/* Modal Content Form Styling */
+.scfw-field-editor {
+	padding: 0;
+}
+
+.scfw-editor-header {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+	padding-bottom: 16px;
+	margin-bottom: 20px;
+	border-bottom: 1px solid var(--scfw-color-border);
+}
+
+.scfw-editor-header h2 {
+	margin: 2px 0 0;
+	font-size: 18px;
+	font-weight: 700;
+	color: var(--scfw-color-text);
+}
+
+.scfw-editor-position {
+	color: var(--scfw-color-text-muted);
+	font-size: 12px;
+}
+
+.scfw-editor-section {
+	margin-bottom: 24px;
+}
+
+.scfw-editor-section > h3 {
+	margin: 0 0 14px;
+	font-size: 13px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--scfw-color-text-muted);
+}
+
+.scfw-editor-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+	margin-bottom: 16px;
+}
+
+.scfw-editor-field--wide {
+	grid-column: 1 / -1;
+}
+
+.scfw-editor-field,
+.scfw-add-controls label {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.scfw-editor-label {
+	color: var(--scfw-color-text);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.scfw-editor-field input[type="text"],
+.scfw-editor-field select,
+.scfw-add-controls input[type="text"],
+.scfw-add-controls select {
+	width: 100%;
+	min-height: 38px;
+	padding: 6px 12px;
+	border: 1px solid var(--scfw-color-border-card);
+	border-radius: var(--scfw-radius-md);
+	background: #ffffff;
+	color: var(--scfw-color-text);
+	font-size: 14px;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	transition: var(--scfw-transition);
+}
+
+.scfw-editor-field input[type="text"]:focus,
+.scfw-editor-field select:focus,
+.scfw-add-controls input[type="text"]:focus,
+.scfw-add-controls select:focus {
+	border-color: var(--scfw-color-primary);
+	outline: none;
+	box-shadow: 0 0 0 3px var(--scfw-color-primary-focus);
+}
+
+.scfw-editor-toggle-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+	margin-top: 16px;
+}
+
+.scfw-editor-switch {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 12px 14px;
+	border: 1px solid var(--scfw-color-border-card);
+	border-radius: var(--scfw-radius-md);
+	background: #ffffff;
+	cursor: pointer;
+	transition: var(--scfw-transition);
+}
+
+.scfw-editor-switch:hover {
+	border-color: var(--scfw-color-border-hover);
+	background: #fafbfc;
+}
+
+.scfw-editor-switch input[type="checkbox"] {
+	margin-top: 2px;
+	accent-color: var(--scfw-color-primary);
+}
+
+.scfw-editor-switch strong {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	color: var(--scfw-color-text);
+}
+
+.scfw-editor-switch small {
+	display: block;
+	margin-top: 2px;
+	font-size: 12px;
+	color: var(--scfw-color-text-muted);
+}
+
+.scfw-options-editor {
+	border: 1px solid var(--scfw-color-border-card);
+	border-radius: var(--scfw-radius-md);
+	background: #ffffff;
+	padding: 16px;
+	margin-bottom: 16px;
+}
+
+.scfw-options-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12px;
+}
+
+.scfw-options-header h4 {
+	margin: 0;
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.scfw-option-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.scfw-option-row input[type="text"] {
+	flex: 1;
+}
+
+.scfw-editor-actions {
+	display: flex;
+	justify-content: flex-start;
+	padding-top: 16px;
+	border-top: 1px solid var(--scfw-color-border);
+}
+
+.scfw-editor-actions .scfw-remove {
+	color: var(--scfw-color-danger) !important;
+	border-color: #fecaca !important;
+	background: #ffffff !important;
+	border-radius: var(--scfw-radius-md) !important;
+}
+
+.scfw-editor-actions .scfw-remove:hover {
+	background: var(--scfw-color-danger-bg) !important;
+	border-color: var(--scfw-color-danger) !important;
+}
+
+/* Add Field Section in Modal */
 .scfw-add-field {
-	margin-top: 12px;
+	padding: 8px 0;
 }
 
-.scfw-add-field select {
-	margin-right: 8px;
+.scfw-add-field-heading {
+	margin-bottom: 12px;
 }
 
-.scfw-add-field .button {
-	vertical-align: baseline;
+.scfw-add-field-heading h2 {
+	margin: 0 0 4px;
+	font-size: 18px;
+	font-weight: 700;
+}
+
+.scfw-add-field p {
+	margin: 0 0 16px;
+	color: var(--scfw-color-text-muted);
+	font-size: 13px;
+}
+
+.scfw-add-controls {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+/* ----------------------------------------------------------------------
+ * Cross-Page Unified Cards (Settings, Import/Export)
+ * ---------------------------------------------------------------------- */
+
+.scfw-card {
+	background: var(--scfw-color-surface);
+	border: 1px solid var(--scfw-color-border-card);
+	border-radius: var(--scfw-radius-lg);
+	box-shadow: var(--scfw-shadow-card);
+	padding: 24px;
+	margin-bottom: 20px;
+}
+
+.scfw-card-title {
+	margin: 0 0 8px;
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--scfw-color-text);
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.scfw-card-desc {
+	margin: 0 0 16px;
+	color: var(--scfw-color-text-muted);
+	font-size: 14px;
+	line-height: 1.5;
+}
+
+.scfw-transfer-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+	gap: 24px;
+}
+
+.scfw-caution {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 14px;
+	background: #fffbeb;
+	border: 1px solid #fde68a;
+	border-radius: var(--scfw-radius-md);
+	color: #92400e;
+	font-size: 13px;
+	margin: 0 0 16px;
+}
+
+.scfw-settings-panel {
+	max-width: 640px;
+	background: #ffffff;
+	border: 1px solid var(--scfw-color-border-card);
+	border-radius: var(--scfw-radius-lg);
+	box-shadow: var(--scfw-shadow-card);
+	padding: 24px;
+}
+
+.scfw-settings-panel h2 {
+	margin-top: 0;
+	font-size: 16px;
+	font-weight: 700;
+}
+
+/* ----------------------------------------------------------------------
+ * Compatibility Section (Settings Tab)
+ * ---------------------------------------------------------------------- */
+
+.scfw-compatibility-card {
+	max-width: 640px;
+	margin-top: 24px;
+	border-color: var(--scfw-color-border-card);
+}
+
+.scfw-compatibility-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+	gap: 12px 20px;
+	margin: 20px 0;
+}
+
+.scfw-compatibility-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 10px 14px;
+	background: #fafbfc;
+	border: 1px solid var(--scfw-color-border);
+	border-radius: var(--scfw-radius-md);
+	transition: var(--scfw-transition);
+}
+
+.scfw-compatibility-item:hover {
+	background: #ffffff;
+	border-color: var(--scfw-color-primary-soft);
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.scfw-compat-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 22px;
+	height: 22px;
+	border-radius: 50%;
+	background-color: var(--scfw-color-primary);
+	color: #ffffff;
+	flex-shrink: 0;
+}
+
+.scfw-compat-label {
+	color: var(--scfw-color-text);
+	font-size: 13px;
+	font-weight: 600;
+}
+
+.scfw-compatibility-note {
+	margin: 16px 0 0;
+	padding-top: 14px;
+	border-top: 1px solid var(--scfw-color-border);
+	color: var(--scfw-color-text-muted);
+	font-size: 12px;
+	line-height: 1.5;
 }

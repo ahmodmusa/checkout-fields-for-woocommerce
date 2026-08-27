@@ -21,6 +21,20 @@
 
 /docs export-ignore
 /tests export-ignore
+/contracts export-ignore
 /.editorconfig export-ignore
 /.gitignore export-ignore
 /.gitattributes export-ignore
+/phpcs.xml export-ignore
+/phpcs.xml.dist export-ignore
+/.phpcs-cache export-ignore
+/phpstan.neon export-ignore
+/phpstan.neon.dist export-ignore
+/.phpstan export-ignore
+/phpunit.xml export-ignore
+/phpunit.xml.dist export-ignore
+/.phpunit.result.cache export-ignore
+/.phpunit.cache export-ignore
+/coverage export-ignore
+/composer.json export-ignore
+/composer.lock export-ignore

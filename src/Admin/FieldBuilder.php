@@ -13,112 +13,399 @@ use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Field\FieldType;
 
 /**
- * Renders the admin builder for the configured checkout fields.
+ * Renders the field list and focused field editor workspace.
  *
- * The builder is pure presentation. Field resolution and normalization stay in
- * the Core field repository; this class only turns the current configuration
- * into native WordPress admin form controls. The created field types come
- * directly from the Core FieldType enum.
+ * The list contains display-only field metadata. Each field's authoritative
+ * Settings API controls live once in its editor panel, which lets the panels
+ * switch visibility without producing duplicate POST values.
  *
  * @since 0.0.1
  */
 final class FieldBuilder {
 
 	/**
-	 * Render the field builder table and add-field controls.
-	 *
-	 * Every control posts through the existing `scfw_options` settings group so
-	 * the WordPress Settings API continues to own nonces, sanitization and
-	 * persistence. The row order in the table is the configured checkout order.
+	 * Render the field workspace and add-field controls.
 	 *
 	 * @since 0.0.1
 	 *
 	 * @return void
 	 */
 	public static function render(): void {
-		$config    = FieldRepository::config();
-		$typeCases = FieldType::cases();
+		$config        = array_values( FieldRepository::config() );
+		$typeCases     = FieldType::cases();
+		$fieldCount    = count( $config );
+		$requiredCount = 0;
+
+		foreach ( $config as $field ) {
+			if ( ! empty( $field['required'] ) ) {
+				$requiredCount++;
+			}
+		}
 		?>
-		<p class="description">
-			<?php esc_html_e( 'Configure the checkout fields. Drag the handle to reorder, or use the row buttons to move, remove or disable a field.', 'checkout-fields-for-woocommerce' ); ?>
-		</p>
-		<table class="widefat striped scfw-field-builder" id="scfw-field-builder">
-			<thead>
-				<tr>
-					<th class="scfw-col-reorder" aria-hidden="true"></th>
-					<th><?php esc_html_e( 'ID', 'checkout-fields-for-woocommerce' ); ?></th>
-					<th><?php esc_html_e( 'Label', 'checkout-fields-for-woocommerce' ); ?></th>
-					<th><?php esc_html_e( 'Type', 'checkout-fields-for-woocommerce' ); ?></th>
-					<th><?php esc_html_e( 'Required', 'checkout-fields-for-woocommerce' ); ?></th>
-					<th><?php esc_html_e( 'Enabled', 'checkout-fields-for-woocommerce' ); ?></th>
-					<th><?php esc_html_e( 'Actions', 'checkout-fields-for-woocommerce' ); ?></th>
-				</tr>
-			</thead>
-			<tbody id="scfw-fields">
-			<?php foreach ( array_values( $config ) as $index => $field ) : ?>
-				<tr data-row="<?php echo esc_attr( (string) $index ); ?>">
-					<td class="scfw-col-reorder">
-						<span class="scfw-handle" draggable="true" title="<?php esc_attr_e( 'Drag to reorder', 'checkout-fields-for-woocommerce' ); ?>">&#8942;</span>
-					</td>
-					<td>
-						<input type="text" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][id]" value="<?php echo esc_attr( (string) $field['id'] ); ?>" />
-					</td>
-					<td>
-						<input type="text" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][label]" value="<?php echo esc_attr( (string) $field['label'] ); ?>" />
-					</td>
-					<td>
-						<select name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][type]">
-							<?php foreach ( $typeCases as $type ) : ?>
-								<option value="<?php echo esc_attr( $type->value ); ?>" <?php selected( (string) $field['type'], $type->value, true ); ?>>
-									<?php echo esc_html( $type->value ); ?>
-								</option>
+		<div class="scfw-fields-view" id="scfw-fields-view">
+			<!-- Main Field Table Card Matching Reference Design -->
+			<div class="scfw-table-card">
+				<table class="scfw-fields-table" aria-label="<?php esc_attr_e( 'Checkout Fields List', 'checkout-fields-for-woocommerce' ); ?>">
+					<thead>
+						<tr>
+							<th class="scfw-col-handle" scope="col"><span class="screen-reader-text"><?php esc_html_e( 'Order', 'checkout-fields-for-woocommerce' ); ?></span></th>
+							<th class="scfw-col-label" scope="col"><?php esc_html_e( 'Label', 'checkout-fields-for-woocommerce' ); ?></th>
+							<th class="scfw-col-type" scope="col"><?php esc_html_e( 'Type', 'checkout-fields-for-woocommerce' ); ?></th>
+							<th class="scfw-col-location" scope="col"><?php esc_html_e( 'Location', 'checkout-fields-for-woocommerce' ); ?></th>
+							<th class="scfw-col-required" scope="col"><?php esc_html_e( 'Required', 'checkout-fields-for-woocommerce' ); ?></th>
+							<th class="scfw-col-enabled" scope="col"><?php esc_html_e( 'Enabled', 'checkout-fields-for-woocommerce' ); ?></th>
+							<th class="scfw-col-actions" scope="col"><?php esc_html_e( 'Actions', 'checkout-fields-for-woocommerce' ); ?></th>
+						</tr>
+					</thead>
+					<tbody id="scfw-fields-tbody">
+						<?php if ( 0 === $fieldCount ) : ?>
+							<tr class="scfw-empty-row">
+								<td colspan="7" class="scfw-empty-cell">
+									<p><?php esc_html_e( 'No custom checkout fields configured yet. Click "Add New Field" above to create one.', 'checkout-fields-for-woocommerce' ); ?></p>
+								</td>
+							</tr>
+						<?php else : ?>
+							<?php foreach ( $config as $index => $field ) : ?>
+								<?php self::renderTableRow( $index, $field ); ?>
+							<?php endforeach; ?>
+						<?php endif; ?>
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Page Summary Section Matching Reference (Bottom) -->
+			<div class="scfw-summary-bar" role="status" aria-label="<?php esc_attr_e( 'Fields Summary', 'checkout-fields-for-woocommerce' ); ?>">
+				<div class="scfw-summary-item">
+					<span class="scfw-summary-icon scfw-summary-icon--list" aria-hidden="true">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+					</span>
+					<span class="scfw-summary-text"><?php echo esc_html( sprintf( /* translators: %d is field count */ _n( '%d Field', '%d Fields', $fieldCount, 'checkout-fields-for-woocommerce' ), $fieldCount ) ); ?></span>
+				</div>
+				<div class="scfw-summary-item">
+					<span class="scfw-summary-icon scfw-summary-icon--check" aria-hidden="true">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+					</span>
+					<span class="scfw-summary-text"><?php echo esc_html( sprintf( /* translators: %d is count */ __( '%d Required', 'checkout-fields-for-woocommerce' ), $requiredCount ) ); ?></span>
+				</div>
+				<div class="scfw-summary-item">
+					<span class="scfw-summary-icon scfw-summary-icon--location" aria-hidden="true">
+						<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+					</span>
+					<span class="scfw-summary-text"><?php esc_html_e( 'Location: Checkout', 'checkout-fields-for-woocommerce' ); ?></span>
+				</div>
+			</div>
+
+			<!-- Editor Modal/Drawer Workspace for Full Field Controls -->
+			<div class="scfw-modal-backdrop" id="scfw-editor-backdrop" hidden>
+				<div class="scfw-modal-container" role="dialog" aria-modal="true" aria-labelledby="scfw-modal-title">
+					<div class="scfw-modal-header">
+						<h2 id="scfw-modal-title"><?php esc_html_e( 'Edit Field Settings', 'checkout-fields-for-woocommerce' ); ?></h2>
+						<button type="button" class="scfw-modal-close" id="scfw-modal-close" aria-label="<?php esc_attr_e( 'Close', 'checkout-fields-for-woocommerce' ); ?>">
+							<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+						</button>
+					</div>
+					<div class="scfw-modal-body" id="scfw-modal-body">
+						<?php foreach ( $config as $index => $field ) : ?>
+							<?php self::renderFieldEditor( $index, $field, $typeCases, $fieldCount, false ); ?>
+						<?php endforeach; ?>
+						<?php self::renderAddFieldPanel( $typeCases ); ?>
+					</div>
+					<div class="scfw-modal-footer">
+						<button type="button" class="button button-secondary scfw-modal-cancel"><?php esc_html_e( 'Done', 'checkout-fields-for-woocommerce' ); ?></button>
+						<button type="submit" class="button button-primary scfw-btn-primary" name="submit" value="1"><?php esc_html_e( 'Save All Changes', 'checkout-fields-for-woocommerce' ); ?></button>
+					</div>
+				</div>
+			</div>
+
+			<!-- Hidden persistent fields container to ensure all settings inputs are submitted safely -->
+			<div class="scfw-hidden-inputs-host" aria-hidden="true" style="display:none;">
+				<?php foreach ( $config as $index => $field ) : ?>
+					<input type="hidden" class="scfw-field-order-input" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][order]" value="<?php echo esc_attr( (string) $index ); ?>" />
+				<?php endforeach; ?>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render one table row matching reference columns and styling.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param int                  $index Field index.
+	 * @param array<string, mixed> $field Field configuration.
+	 *
+	 * @return void
+	 */
+	private static function renderTableRow( int $index, array $field ): void {
+		$type     = (string) ( $field['type'] ?? 'text' );
+		$label    = (string) ( $field['label'] ?? '' );
+		$enabled  = ! empty( $field['enabled'] );
+		$required = ! empty( $field['required'] );
+		$typeName = ucfirst( $type );
+		?>
+		<tr class="scfw-field-row <?php echo $enabled ? '' : 'scfw-field-row--disabled'; ?>" data-row="<?php echo esc_attr( (string) $index ); ?>" data-type="<?php echo esc_attr( $type ); ?>">
+			<!-- Drag Handle -->
+			<td class="scfw-col-handle">
+				<span class="scfw-drag-handle" draggable="true" title="<?php esc_attr_e( 'Drag to reorder', 'checkout-fields-for-woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Drag to reorder', 'checkout-fields-for-woocommerce' ); ?>" aria-hidden="true">
+					<svg width="14" height="18" viewBox="0 0 14 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="3.5" cy="3.5" r="1.5" fill="#a0aec0"/>
+						<circle cx="10.5" cy="3.5" r="1.5" fill="#a0aec0"/>
+						<circle cx="3.5" cy="9" r="1.5" fill="#a0aec0"/>
+						<circle cx="10.5" cy="9" r="1.5" fill="#a0aec0"/>
+						<circle cx="3.5" cy="14.5" r="1.5" fill="#a0aec0"/>
+						<circle cx="10.5" cy="14.5" r="1.5" fill="#a0aec0"/>
+					</svg>
+				</span>
+			</td>
+
+			<!-- Label -->
+			<td class="scfw-col-label">
+				<span class="scfw-row-label-text"><?php echo esc_html( $label ); ?></span>
+			</td>
+
+			<!-- Type -->
+			<td class="scfw-col-type">
+				<span class="scfw-row-type-text"><?php echo esc_html( $typeName ); ?></span>
+			</td>
+
+			<!-- Location -->
+			<td class="scfw-col-location">
+				<span class="scfw-row-location-text"><?php esc_html_e( 'Checkout', 'checkout-fields-for-woocommerce' ); ?></span>
+			</td>
+
+			<!-- Required -->
+			<td class="scfw-col-required">
+				<?php if ( $required ) : ?>
+					<span class="scfw-icon-check" title="<?php esc_attr_e( 'Required', 'checkout-fields-for-woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Required', 'checkout-fields-for-woocommerce' ); ?>">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5925dc" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+					</span>
+				<?php else : ?>
+					<span class="scfw-icon-dash" aria-hidden="true">—</span>
+				<?php endif; ?>
+			</td>
+
+			<!-- Enabled Toggle (Interactive) -->
+			<td class="scfw-col-enabled">
+				<label class="scfw-toggle-switch">
+					<input type="hidden" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][enabled]" value="0" />
+					<input type="checkbox" class="scfw-toggle-input" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][enabled]" value="1" <?php checked( $enabled, true ); ?> aria-label="<?php echo esc_attr( sprintf( /* translators: %s is field label */ __( 'Enable %s field', 'checkout-fields-for-woocommerce' ), $label ) ); ?>" />
+					<span class="scfw-toggle-track"><span class="scfw-toggle-thumb"></span></span>
+				</label>
+			</td>
+
+			<!-- Actions: Edit & Delete Icons -->
+			<td class="scfw-col-actions">
+				<div class="scfw-actions-wrap">
+					<button type="button" class="scfw-action-btn scfw-action-btn--edit scfw-trigger-edit-field" data-row="<?php echo esc_attr( (string) $index ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s is field label */ __( 'Edit %s', 'checkout-fields-for-woocommerce' ), $label ) ); ?>" title="<?php esc_attr_e( 'Edit Field', 'checkout-fields-for-woocommerce' ); ?>">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5925dc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+					</button>
+					<button type="submit" class="scfw-action-btn scfw-action-btn--delete scfw-remove" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][remove]" value="1" data-confirm="<?php esc_attr_e( 'Are you sure you want to delete this field?', 'checkout-fields-for-woocommerce' ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s is field label */ __( 'Delete %s', 'checkout-fields-for-woocommerce' ), $label ) ); ?>" title="<?php esc_attr_e( 'Delete Field', 'checkout-fields-for-woocommerce' ); ?>">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+					</button>
+				</div>
+			</td>
+		</tr>
+		<?php
+	}
+
+	/**
+	 * Render one authoritative editor panel.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param int                         $index     Field index.
+	 * @param array<string, mixed>        $field     Field configuration.
+	 * @param array<int, FieldType>       $typeCases Supported field types.
+	 * @param int                         $total     Total field count.
+	 * @param bool                        $selected  Whether this is initially selected.
+	 *
+	 * @return void
+	 */
+	private static function renderFieldEditor( int $index, array $field, array $typeCases, int $total, bool $selected ): void {
+		$type = (string) $field['type'];
+		?>
+		<div class="scfw-field-details scfw-field-editor" id="scfw-field-editor-<?php echo esc_attr( (string) $index ); ?>" data-row="<?php echo esc_attr( (string) $index ); ?>" <?php echo $selected ? '' : 'hidden'; ?>>
+			<div class="scfw-editor-header">
+				<div>
+					<span class="scfw-section-eyebrow"><?php esc_html_e( 'Field settings', 'checkout-fields-for-woocommerce' ); ?></span>
+					<h2 class="scfw-editor-field-heading"><?php echo esc_html( (string) $field['label'] ); ?></h2>
+					<span class="scfw-editor-field-type"><?php echo esc_html( $type ); ?></span>
+				</div>
+				<span class="scfw-editor-position"><?php echo esc_html( sprintf( /* translators: %1$d is the current field number, %2$d is the total count. */ __( 'Field %1$d of %2$d', 'checkout-fields-for-woocommerce' ), $index + 1, $total ) ); ?></span>
+			</div>
+
+			<section class="scfw-editor-section">
+				<h3><?php esc_html_e( 'General', 'checkout-fields-for-woocommerce' ); ?></h3>
+				<div class="scfw-editor-grid">
+					<label class="scfw-editor-field scfw-editor-field--wide">
+						<span class="scfw-editor-label"><?php esc_html_e( 'Label', 'checkout-fields-for-woocommerce' ); ?></span>
+						<input type="text" class="scfw-field-label" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][label]" value="<?php echo esc_attr( (string) $field['label'] ); ?>" />
+					</label>
+					<label class="scfw-editor-field">
+						<span class="scfw-editor-label"><?php esc_html_e( 'Field ID', 'checkout-fields-for-woocommerce' ); ?></span>
+						<input type="text" class="scfw-field-id" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][id]" value="<?php echo esc_attr( (string) $field['id'] ); ?>" />
+					</label>
+					<label class="scfw-editor-field">
+						<span class="scfw-editor-label"><?php esc_html_e( 'Field type', 'checkout-fields-for-woocommerce' ); ?></span>
+						<select class="scfw-field-type scfw-type--<?php echo esc_attr( $type ); ?>" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][type]">
+							<?php foreach ( $typeCases as $typeCase ) : ?>
+								<option value="<?php echo esc_attr( $typeCase->value ); ?>" <?php selected( $type, $typeCase->value, true ); ?>><?php echo esc_html( $typeCase->value ); ?></option>
 							<?php endforeach; ?>
 						</select>
-					</td>
-					<td>
-						<input type="hidden" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][required]" value="0" />
-						<input type="checkbox" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][required]" value="1" <?php checked( (bool) $field['required'], true ); ?> />
-					</td>
-					<td>
-						<input type="hidden" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][enabled]" value="0" />
-						<input type="checkbox" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][enabled]" value="1" <?php checked( (bool) $field['enabled'], true ); ?> />
-					</td>
-					<td class="scfw-actions">
-						<button type="submit" class="button-link" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][move]" value="up">
-							<?php esc_html_e( 'Up', 'checkout-fields-for-woocommerce' ); ?>
-						</button>
-						<span aria-hidden="true">|</span>
-						<button type="submit" class="button-link" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][move]" value="down">
-							<?php esc_html_e( 'Down', 'checkout-fields-for-woocommerce' ); ?>
-						</button>
-						<span aria-hidden="true">|</span>
-						<button type="submit" class="button-link scfw-remove" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][remove]" value="1">
-							<?php esc_html_e( 'Remove', 'checkout-fields-for-woocommerce' ); ?>
-						</button>
-					</td>
-				</tr>
-			<?php endforeach; ?>
-			</tbody>
-		</table>
+					</label>
+				</div>
 
-		<fieldset class="scfw-add-field">
-			<legend><?php esc_html_e( 'Add New Field', 'checkout-fields-for-woocommerce' ); ?></legend>
-			<p>
-				<label for="scfw-new-type">
-					<?php esc_html_e( 'Type', 'checkout-fields-for-woocommerce' ); ?>
-					<select id="scfw-new-type" name="scfw_options[new_field][type]">
+				<div class="scfw-editor-toggle-grid">
+					<label class="scfw-editor-switch scfw-required-control">
+						<input type="hidden" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][required]" value="0" />
+						<input type="checkbox" class="scfw-mini-switch__input" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][required]" value="1" <?php checked( (bool) $field['required'], true ); ?> />
+						<span class="scfw-editor-switch__box" aria-hidden="true"></span>
+						<span><strong><?php esc_html_e( 'Required', 'checkout-fields-for-woocommerce' ); ?></strong><small><?php esc_html_e( 'This field must be completed at checkout.', 'checkout-fields-for-woocommerce' ); ?></small></span>
+					</label>
+					<label class="scfw-editor-switch scfw-status-control">
+						<input type="hidden" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][enabled]" value="0" />
+						<input type="checkbox" class="scfw-mini-switch__input" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][enabled]" value="1" <?php checked( (bool) $field['enabled'], true ); ?> />
+						<span class="scfw-editor-switch__box" aria-hidden="true"></span>
+						<span><strong><?php esc_html_e( 'Enabled', 'checkout-fields-for-woocommerce' ); ?></strong><small><?php esc_html_e( 'Show this field during checkout.', 'checkout-fields-for-woocommerce' ); ?></small></span>
+					</label>
+				</div>
+			</section>
+
+			<?php self::renderTypeSettings( $index, $type, $field ); ?>
+
+			<div class="scfw-editor-actions">
+				<button type="submit" class="button scfw-remove" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][remove]" value="1" data-confirm="<?php esc_attr_e( 'Are you sure you want to delete this field?', 'checkout-fields-for-woocommerce' ); ?>">
+					<span class="dashicons dashicons-trash" aria-hidden="true"></span>
+					<?php esc_html_e( 'Delete Field', 'checkout-fields-for-woocommerce' ); ?>
+				</button>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render type-specific controls for an editor.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param int                  $index Field index.
+	 * @param string               $type Field type.
+	 * @param array<string, mixed> $field Field configuration.
+	 *
+	 * @return void
+	 */
+	private static function renderTypeSettings( int $index, string $type, array $field ): void {
+		$isChoice   = in_array( $type, array( 'radio', 'select' ), true );
+		$isText     = in_array( $type, array( 'text', 'textarea' ), true );
+		$isTextarea = 'textarea' === $type;
+		$hasDefault = $isChoice || $isText;
+		$options    = is_array( $field['options'] ?? null ) ? array_values( $field['options'] ) : array();
+		$prefix     = 'scfw_options[fields][' . $index . ']';
+
+		if ( 0 === count( $options ) ) {
+			$options = array( '' );
+		}
+		?>
+		<section class="scfw-editor-section scfw-type-settings scfw-field-details-inner" data-type-settings="<?php echo esc_attr( $type ); ?>">
+			<h3><?php esc_html_e( 'Field-specific settings', 'checkout-fields-for-woocommerce' ); ?></h3>
+			<div class="scfw-options-editor" <?php echo $isChoice ? '' : 'hidden'; ?>>
+				<div class="scfw-options-header">
+					<h4><?php esc_html_e( 'Options', 'checkout-fields-for-woocommerce' ); ?></h4>
+					<button type="button" class="button scfw-option-add" <?php disabled( ! $isChoice ); ?>><?php esc_html_e( 'Add Option', 'checkout-fields-for-woocommerce' ); ?></button>
+				</div>
+				<div class="scfw-options-list">
+					<?php foreach ( $options as $option ) : ?>
+						<?php self::renderOptionRow( $prefix, (string) $option, $isChoice ); ?>
+					<?php endforeach; ?>
+				</div>
+				<template class="scfw-option-template">
+					<?php self::renderOptionRow( $prefix, '', true ); ?>
+				</template>
+			</div>
+
+			<div class="scfw-detail-grid">
+				<div class="scfw-placeholder-field" <?php echo $isText ? '' : 'hidden'; ?>>
+					<label class="scfw-editor-field">
+						<span class="scfw-editor-label"><?php esc_html_e( 'Placeholder', 'checkout-fields-for-woocommerce' ); ?></span>
+						<input type="text" name="<?php echo esc_attr( $prefix . '[placeholder]' ); ?>" value="<?php echo esc_attr( (string) ( $field['placeholder'] ?? '' ) ); ?>" <?php disabled( ! $isText ); ?> />
+					</label>
+				</div>
+				<div class="scfw-default-field" <?php echo $hasDefault ? '' : 'hidden'; ?>>
+					<label class="scfw-editor-field">
+						<span class="scfw-editor-label"><?php esc_html_e( 'Default Value', 'checkout-fields-for-woocommerce' ); ?></span>
+						<input type="text" name="<?php echo esc_attr( $prefix . '[default]' ); ?>" value="<?php echo esc_attr( (string) ( $field['default'] ?? '' ) ); ?>" <?php disabled( ! $hasDefault ); ?> />
+					</label>
+				</div>
+				<div class="scfw-description-field" <?php echo $isTextarea ? '' : 'hidden'; ?>>
+					<label class="scfw-editor-field scfw-editor-field--wide">
+						<span class="scfw-editor-label"><?php esc_html_e( 'Description', 'checkout-fields-for-woocommerce' ); ?></span>
+						<input type="text" name="<?php echo esc_attr( $prefix . '[description]' ); ?>" value="<?php echo esc_attr( (string) ( $field['description'] ?? '' ) ); ?>" <?php disabled( ! $isTextarea ); ?> />
+					</label>
+				</div>
+			</div>
+		</section>
+		<?php
+	}
+
+	/**
+	 * Render the inline add-field panel.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<int, FieldType> $typeCases Supported field types.
+	 *
+	 * @return void
+	 */
+	private static function renderAddFieldPanel( array $typeCases ): void {
+		?>
+		<section class="scfw-add-field" id="scfw-add-field" aria-labelledby="scfw-add-field-title">
+			<div class="scfw-add-field-heading">
+				<div>
+					<span class="scfw-section-eyebrow"><?php esc_html_e( 'Creation', 'checkout-fields-for-woocommerce' ); ?></span>
+					<h2 id="scfw-add-field-title"><?php esc_html_e( 'Add New Field', 'checkout-fields-for-woocommerce' ); ?></h2>
+				</div>
+				<span class="dashicons dashicons-plus-alt2" aria-hidden="true"></span>
+			</div>
+			<p><?php esc_html_e( 'Create a custom field for additional checkout information.', 'checkout-fields-for-woocommerce' ); ?></p>
+			<div class="scfw-add-controls">
+				<label>
+					<span class="scfw-editor-label"><?php esc_html_e( 'Field type', 'checkout-fields-for-woocommerce' ); ?></span>
+					<select name="scfw_options[new_field][type]">
 						<?php foreach ( $typeCases as $type ) : ?>
 							<option value="<?php echo esc_attr( $type->value ); ?>"><?php echo esc_html( $type->value ); ?></option>
 						<?php endforeach; ?>
 					</select>
 				</label>
-				<label for="scfw-new-label">
-					<?php esc_html_e( 'Label', 'checkout-fields-for-woocommerce' ); ?>
-					<input id="scfw-new-label" type="text" name="scfw_options[new_field][label]" value="" />
+				<label>
+					<span class="scfw-editor-label"><?php esc_html_e( 'Field label', 'checkout-fields-for-woocommerce' ); ?></span>
+					<input type="text" name="scfw_options[new_field][label]" value="" placeholder="<?php esc_attr_e( 'e.g. Delivery Instructions', 'checkout-fields-for-woocommerce' ); ?>" />
 				</label>
-				<?php submit_button( __( 'Add Field', 'checkout-fields-for-woocommerce' ), 'secondary', 'scfw_options[add]', false ); ?>
-			</p>
-		</fieldset>
+				<?php submit_button( __( 'Add Field', 'checkout-fields-for-woocommerce' ), 'primary', 'scfw_options[add]', false, array( 'id' => 'scfw-add-submit' ) ); ?>
+			</div>
+		</section>
+		<?php
+	}
+
+	/**
+	 * Render one option control row.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param string $prefix  Form field prefix.
+	 * @param string $value   Option value.
+	 * @param bool   $enabled Whether the option is applicable.
+	 *
+	 * @return void
+	 */
+	private static function renderOptionRow( string $prefix, string $value, bool $enabled ): void {
+		?>
+		<div class="scfw-option-row">
+			<input type="text" name="<?php echo esc_attr( $prefix . '[options][]' ); ?>" value="<?php echo esc_attr( $value ); ?>" <?php disabled( ! $enabled ); ?> aria-label="<?php esc_attr_e( 'Option value', 'checkout-fields-for-woocommerce' ); ?>" />
+			<button type="button" class="button-link scfw-option-up" aria-label="<?php esc_attr_e( 'Move option up', 'checkout-fields-for-woocommerce' ); ?>" <?php disabled( ! $enabled ); ?>>&#8593;</button>
+			<button type="button" class="button-link scfw-option-down" aria-label="<?php esc_attr_e( 'Move option down', 'checkout-fields-for-woocommerce' ); ?>" <?php disabled( ! $enabled ); ?>>&#8595;</button>
+			<button type="button" class="button-link scfw-option-remove" aria-label="<?php esc_attr_e( 'Remove option', 'checkout-fields-for-woocommerce' ); ?>" <?php disabled( ! $enabled ); ?>><?php esc_html_e( 'Remove', 'checkout-fields-for-woocommerce' ); ?></button>
+		</div>
 		<?php
 	}
 }
