@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SCFW\Services;
 
 use SCFW\Core\Field\FieldRepository;
+use SCFW\Core\Field\FieldType;
 use WC_Order;
 
 /**
@@ -57,10 +58,20 @@ final class OrderFieldPresentation {
 				continue;
 			}
 
+			$formatted = (string) $value;
+
+			if ( FieldType::CHECKBOX === $field->getType() ) {
+				if ( '1' === $formatted || 1 === $value || true === $value ) {
+					$formatted = __( 'Yes', 'checkout-fields-for-woocommerce' );
+				} elseif ( '0' === $formatted || 0 === $value || false === $value ) {
+					$formatted = __( 'No', 'checkout-fields-for-woocommerce' );
+				}
+			}
+
 			$rows[] = array(
 				'id'    => $field->getId(),
 				'label' => $field->getLabel(),
-				'value' => (string) $value,
+				'value' => $formatted,
 			);
 		}
 

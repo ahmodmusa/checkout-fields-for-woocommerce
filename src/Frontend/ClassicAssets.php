@@ -30,14 +30,21 @@ final class ClassicAssets {
 	 * @return void
 	 */
 	public static function enqueueAssets(): void {
-		if ( is_admin() || ! is_checkout() ) {
+		if ( is_admin() ) {
 			return;
 		}
 
-		$post = get_post();
+		// Enqueue on checkout, order received (thank you), or my account view order pages.
+		$is_scfw_page = is_checkout()
+			|| ( function_exists( 'is_order_received_page' ) && is_order_received_page() )
+			|| ( function_exists( 'is_view_order_page' ) && is_view_order_page() );
 
-		if ( ! $post || ! has_shortcode( $post->post_content, 'woocommerce_checkout' ) ) {
-			return;
+		if ( ! $is_scfw_page ) {
+			$post = get_post();
+
+			if ( ! $post || ! has_shortcode( $post->post_content, 'woocommerce_checkout' ) ) {
+				return;
+			}
 		}
 
 		$style_version = (string) filemtime( SCFW_PATH . 'assets/frontend/classic.css' );

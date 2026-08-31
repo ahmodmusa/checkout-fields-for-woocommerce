@@ -48,6 +48,16 @@ function __( string $text, string $domain = 'default' ): string {
 }
 
 /**
+ * Escape html the way esc_html() does.
+ *
+ * @param string $text Raw text.
+ * @return string Escaped html text.
+ */
+function esc_html( string $text ): string {
+	return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+}
+
+/**
  * Sanitize a key the way sanitize_key() does.
  *
  * @param string $key Raw key.

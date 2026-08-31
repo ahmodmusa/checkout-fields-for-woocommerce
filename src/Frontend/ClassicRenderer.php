@@ -40,34 +40,31 @@ final class ClassicRenderer implements Renderer {
 		$args  = $this->fieldArgs( $field, $context );
 		$html  = woocommerce_form_field( $field->getId(), $args, $value );
 
-		if ( FieldType::SELECT === $field->getType() && $field->getRequired() ) {
-			$html = self::withEmptySelectOption( (string) $html );
+		if ( FieldType::SELECT === $field->getType() && ( $field->getRequired() || '' !== $field->getPlaceholder() ) ) {
+			$html = self::withEmptySelectOption( (string) $html, $field->getPlaceholder() );
 		}
 
 		return new RenderResult( (string) $html, array() );
 	}
 
 	/**
-	 * Insert an empty placeholder option into a required select.
-	 *
-	 * Without a placeholder a required select silently pre-selects its first
-	 * real option, because the browser submits the option that is visible when
-	 * the customer never actively chooses. The leading empty option forces an
-	 * explicit selection so the server-side required validation stays
-	 * meaningful. The placeholder is never stored as a value.
+	 * Insert a leading placeholder option into a select if placeholder is set or if required.
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param string $html Rendered select markup.
+	 * @param string $html        Rendered select markup.
+	 * @param string $placeholder Placeholder label text.
 	 *
-	 * @return string Markup with the empty placeholder option inserted.
+	 * @return string Markup with the empty/placeholder option inserted.
 	 */
-	private static function withEmptySelectOption( string $html ): string {
+	private static function withEmptySelectOption( string $html, string $placeholder = '' ): string {
 		if ( false === strpos( $html, '<select' ) ) {
 			return $html;
 		}
 
-		return (string) preg_replace( '/<select\b[^>]*>/i', '$0<option value=""></option>', $html, 1 );
+		$label = esc_html( $placeholder );
+
+		return (string) preg_replace( '/<select\b[^>]*>/i', '$0<option value="">' . $label . '</option>', $html, 1 );
 	}
 
 	/**

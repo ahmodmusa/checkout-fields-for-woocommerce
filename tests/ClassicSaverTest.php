@@ -120,5 +120,39 @@ $saver->save( $order, $field, '1' );
 			$this->assertTrue( $order->meta_exists( '_scfw_notes' ) );
 			$this->assertSame( '', $order->get_meta( '_scfw_notes' ) );
 		}
+
+		public function testOrderFieldPresentationFormatsCheckboxAsYesAndNo(): void {
+			$GLOBALS['scfw_test_options']['scfw_options'] = array(
+				'enabled' => 1,
+				'fields'  => array(
+					'is_gift' => array(
+						'id'       => 'is_gift',
+						'label'    => 'Is Gift',
+						'type'     => 'checkbox',
+						'required' => false,
+						'enabled'  => true,
+					),
+					'is_urgent' => array(
+						'id'       => 'is_urgent',
+						'label'    => 'Is Urgent',
+						'type'     => 'checkbox',
+						'required' => false,
+						'enabled'  => true,
+					),
+				),
+			);
+
+			$order = $this->order();
+			$order->update_meta_data( '_scfw_is_gift', '1' );
+			$order->update_meta_data( '_scfw_is_urgent', '0' );
+
+			$rows = \SCFW\Services\OrderFieldPresentation::rowsFor( $order );
+
+			$this->assertCount( 2, $rows );
+			$this->assertSame( 'Is Gift', $rows[0]['label'] );
+			$this->assertSame( 'Yes', $rows[0]['value'] );
+			$this->assertSame( 'Is Urgent', $rows[1]['label'] );
+			$this->assertSame( 'No', $rows[1]['value'] );
+		}
 	}
 }
