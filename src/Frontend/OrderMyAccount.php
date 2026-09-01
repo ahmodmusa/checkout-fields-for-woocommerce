@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace SCFW\Frontend;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Services\OrderFieldPresentation;
 use WC_Order;
+
 
 /**
  * Displays saved checkout field values in the customer's My Account order view.
@@ -60,7 +62,7 @@ final class OrderMyAccount {
 			return;
 		}
 
-		$rows = OrderFieldPresentation::rowsFor( $order );
+		$rows = OrderFieldPresentation::rowsFor( $order, FieldDestination::MY_ACCOUNT );
 
 		if ( empty( $rows ) ) {
 			return;

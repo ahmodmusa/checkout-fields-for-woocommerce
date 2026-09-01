@@ -339,4 +339,80 @@ final class SettingsSanitizeTest extends TestCase {
 		$this->assertSame( array( 'Y', 'N' ), $note['options'] ?? null );
 		$this->assertSame( '', $note['default'] ?? null );
 	}
+
+	public function testSavePreservesAndUpdatesDestinationsAndConditions(): void {
+		$stored = array(
+			'gift_wrap' => $this->storedEntry(
+				array(
+					'id'           => 'gift_wrap',
+					'label'        => 'Gift Wrap',
+					'type'         => 'checkbox',
+					'destinations' => array( 'admin_order', 'customer_email' ),
+					'conditions'   => null,
+				)
+			),
+			'gift_msg'  => $this->storedEntry(
+				array(
+					'id'           => 'gift_msg',
+					'label'        => 'Gift Message',
+					'type'         => 'text',
+					'destinations' => array( 'admin_order', 'thank_you' ),
+					'conditions'   => array(
+						'field'    => 'gift_wrap',
+						'operator' => 'equals',
+						'value'    => 'Yes',
+					),
+				)
+			),
+		);
+
+		$GLOBALS['scfw_test_options'] = array(
+			'scfw_options' => array(
+				'enabled' => 1,
+				'fields'  => $stored,
+			),
+		);
+
+		// Submitting an update with changed label and new destination selection for gift_wrap.
+		$clean = Settings::sanitize(
+			array(
+				'enabled' => '1',
+				'fields'  => array(
+					array(
+						'id'           => 'gift_wrap',
+						'label'        => 'Add Gift Wrapping?',
+						'type'         => 'checkbox',
+						'required'     => '0',
+						'enabled'      => '1',
+						'destinations' => array( 'admin_order', 'thank_you', 'my_account' ),
+					),
+					array(
+						'id'           => 'gift_msg',
+						'label'        => 'Gift Message',
+						'type'         => 'text',
+						'required'     => '1',
+						'enabled'      => '1',
+						'destinations' => array( 'admin_order' ),
+						'conditions'   => array(
+							'field'    => 'gift_wrap',
+							'operator' => 'equals',
+							'value'    => 'Yes',
+						),
+					),
+				),
+			)
+		);
+
+		$fields = $this->savedFields( $clean );
+		$this->assertCount( 2, $fields );
+		$this->assertSame( 'Add Gift Wrapping?', $fields['gift_wrap']['label'] );
+		$this->assertSame( array( 'admin_order', 'thank_you', 'my_account' ), $fields['gift_wrap']['destinations'] );
+		$this->assertNull( $fields['gift_wrap']['conditions'] );
+
+		$this->assertSame( array( 'admin_order' ), $fields['gift_msg']['destinations'] );
+		$this->assertNotNull( $fields['gift_msg']['conditions'] );
+		$this->assertSame( 'gift_wrap', $fields['gift_msg']['conditions']['field'] );
+		$this->assertSame( 'equals', $fields['gift_msg']['conditions']['operator'] );
+		$this->assertSame( 'Yes', $fields['gift_msg']['conditions']['value'] );
+	}
 }

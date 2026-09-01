@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SCFW\Services;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Field\FieldType;
 use WC_Order;
@@ -44,14 +45,19 @@ final class OrderFieldPresentation {
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param WC_Order $order WooCommerce order.
+	 * @param WC_Order               $order       WooCommerce order.
+	 * @param FieldDestination|null  $destination Target presentation destination, or null for all.
 	 *
 	 * @return array<int, array{id: string, label: string, value: string}> Presentable rows in configured order.
 	 */
-	public static function rowsFor( WC_Order $order ): array {
+	public static function rowsFor( WC_Order $order, ?FieldDestination $destination = null ): array {
 		$rows = array();
 
 		foreach ( FieldRepository::get() as $field ) {
+			if ( null !== $destination && ! $field->hasDestination( $destination ) ) {
+				continue;
+			}
+
 			$value = $order->get_meta( self::META_PREFIX . $field->getId(), true );
 
 			if ( ! is_scalar( $value ) || '' === (string) $value ) {

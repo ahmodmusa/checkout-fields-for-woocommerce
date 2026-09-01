@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace SCFW\Admin;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Core\Field\FieldRepository;
 use SCFW\Core\Field\FieldType;
+
 
 /**
  * Renders the field list and focused field editor workspace.
@@ -106,10 +108,11 @@ final class FieldBuilder {
 					</div>
 					<div class="scfw-modal-body" id="scfw-modal-body">
 						<?php foreach ( $config as $index => $field ) : ?>
-							<?php self::renderFieldEditor( $index, $field, $typeCases, $fieldCount, false ); ?>
+							<?php self::renderFieldEditor( $index, $field, $typeCases, $fieldCount, false, $config ); ?>
 						<?php endforeach; ?>
 						<?php self::renderAddFieldPanel( $typeCases ); ?>
 					</div>
+
 					<div class="scfw-modal-footer">
 						<button type="button" class="button button-secondary scfw-modal-cancel"><?php esc_html_e( 'Done', 'checkout-fields-for-woocommerce' ); ?></button>
 						<button type="submit" class="button button-primary scfw-btn-primary" name="submit" value="1"><?php esc_html_e( 'Save All Changes', 'checkout-fields-for-woocommerce' ); ?></button>
@@ -219,10 +222,11 @@ final class FieldBuilder {
 	 * @param array<int, FieldType>       $typeCases Supported field types.
 	 * @param int                         $total     Total field count.
 	 * @param bool                        $selected  Whether this is initially selected.
+	 * @param array<int, mixed>           $allFields All configured fields.
 	 *
 	 * @return void
 	 */
-	private static function renderFieldEditor( int $index, array $field, array $typeCases, int $total, bool $selected ): void {
+	private static function renderFieldEditor( int $index, array $field, array $typeCases, int $total, bool $selected, array $allFields ): void {
 		$type = (string) $field['type'];
 		?>
 		<div class="scfw-field-details scfw-field-editor" id="scfw-field-editor-<?php echo esc_attr( (string) $index ); ?>" data-row="<?php echo esc_attr( (string) $index ); ?>" <?php echo $selected ? '' : 'hidden'; ?>>
@@ -231,6 +235,7 @@ final class FieldBuilder {
 					<span class="scfw-section-eyebrow"><?php esc_html_e( 'Field settings', 'checkout-fields-for-woocommerce' ); ?></span>
 					<h2 class="scfw-editor-field-heading"><?php echo esc_html( (string) $field['label'] ); ?></h2>
 					<span class="scfw-editor-field-type"><?php echo esc_html( $type ); ?></span>
+
 				</div>
 				<span class="scfw-editor-position"><?php echo esc_html( sprintf( /* translators: %1$d is the current field number, %2$d is the total count. */ __( 'Field %1$d of %2$d', 'checkout-fields-for-woocommerce' ), $index + 1, $total ) ); ?></span>
 			</div>
@@ -274,6 +279,11 @@ final class FieldBuilder {
 
 			<?php self::renderTypeSettings( $index, $type, $field ); ?>
 
+			<?php self::renderConditionsSettings( $index, $field, $allFields ); ?>
+
+			<?php self::renderDestinationsSettings( $index, $field ); ?>
+
+
 			<div class="scfw-editor-actions">
 				<button type="submit" class="button scfw-remove" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][remove]" value="1" data-confirm="<?php esc_attr_e( 'Are you sure you want to delete this field?', 'checkout-fields-for-woocommerce' ); ?>">
 					<span class="dashicons dashicons-trash" aria-hidden="true"></span>
@@ -283,6 +293,135 @@ final class FieldBuilder {
 		</div>
 		<?php
 	}
+
+	/**
+	 * Render conditional visibility controls for a field editor.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param int                  $index     Field index.
+	 * @param array<string, mixed> $field     Field configuration.
+	 * @param array<int, mixed>    $allFields All configured fields for parent selection.
+	 *
+	 * @return void
+	 */
+	private static function renderConditionsSettings( int $index, array $field, array $allFields ): void {
+		$conditions = isset( $field['conditions'] ) && is_array( $field['conditions'] ) ? $field['conditions'] : null;
+		$hasCondition = null !== $conditions && ! empty( $conditions['field'] );
+		$currentId  = (string) ( $field['id'] ?? '' );
+		$prefix     = 'scfw_options[fields][' . $index . '][conditions]';
+
+		// Available parent fields (excluding self).
+		$otherFields = array();
+		foreach ( $allFields as $f ) {
+			if ( is_array( $f ) && isset( $f['id'] ) && $f['id'] !== $currentId ) {
+				$otherFields[] = $f;
+			}
+		}
+		?>
+		<section class="scfw-editor-section scfw-conditions-settings">
+			<h3><?php esc_html_e( 'Conditional Visibility', 'checkout-fields-for-woocommerce' ); ?></h3>
+			<p class="description" style="margin:0 0 12px; color:#646970;">
+				<?php esc_html_e( 'Show or hide this field based on the customer’s selection in another checkout field.', 'checkout-fields-for-woocommerce' ); ?>
+			</p>
+
+			<?php if ( empty( $otherFields ) ) : ?>
+				<div style="background:#f3f4f6; border-left:4px solid #9ca3af; padding:10px 14px; border-radius:4px; font-size:13px; color:#4b5563;">
+					<?php esc_html_e( 'Conditional visibility requires at least one other field to reference.', 'checkout-fields-for-woocommerce' ); ?>
+				</div>
+			<?php else : ?>
+				<div class="scfw-condition-controls" style="background:#f9fafb; padding:12px 14px; border-radius:6px; border:1px solid #e5e7eb;">
+					<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(180px, 1fr)); gap:10px; align-items:end;">
+						<label class="scfw-editor-field" style="margin:0;">
+							<span class="scfw-editor-label" style="font-size:12px;"><?php esc_html_e( 'Controlling Field', 'checkout-fields-for-woocommerce' ); ?></span>
+							<select name="<?php echo esc_attr( $prefix . '[field]' ); ?>" style="width:100%;">
+								<option value=""><?php esc_html_e( '— Always Visible (No Condition) —', 'checkout-fields-for-woocommerce' ); ?></option>
+								<?php foreach ( $otherFields as $candidate ) : ?>
+									<option value="<?php echo esc_attr( (string) $candidate['id'] ); ?>" <?php selected( (string) ( $conditions['field'] ?? '' ), (string) $candidate['id'], true ); ?>>
+										<?php echo esc_html( (string) $candidate['label'] ); ?> (<?php echo esc_html( (string) $candidate['id'] ); ?>)
+									</option>
+								<?php endforeach; ?>
+							</select>
+						</label>
+
+						<label class="scfw-editor-field" style="margin:0;">
+							<span class="scfw-editor-label" style="font-size:12px;"><?php esc_html_e( 'Operator', 'checkout-fields-for-woocommerce' ); ?></span>
+							<select name="<?php echo esc_attr( $prefix . '[operator]' ); ?>" style="width:100%;">
+								<option value="equals" <?php selected( (string) ( $conditions['operator'] ?? 'equals' ), 'equals', true ); ?>><?php esc_html_e( 'equals', 'checkout-fields-for-woocommerce' ); ?></option>
+								<option value="not_equals" <?php selected( (string) ( $conditions['operator'] ?? '' ), 'not_equals', true ); ?>><?php esc_html_e( 'not equals', 'checkout-fields-for-woocommerce' ); ?></option>
+							</select>
+						</label>
+
+						<label class="scfw-editor-field" style="margin:0;">
+							<span class="scfw-editor-label" style="font-size:12px;"><?php esc_html_e( 'Expected Value', 'checkout-fields-for-woocommerce' ); ?></span>
+							<input type="text" name="<?php echo esc_attr( $prefix . '[value]' ); ?>" value="<?php echo esc_attr( (string) ( $conditions['value'] ?? '' ) ); ?>" placeholder="<?php esc_attr_e( 'e.g. Yes or Option Value', 'checkout-fields-for-woocommerce' ); ?>" style="width:100%;" />
+						</label>
+					</div>
+				</div>
+			<?php endif; ?>
+		</section>
+		<?php
+	}
+
+
+	/**
+	 * Render presentation destination controls for a field editor.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param int                  $index Field index.
+	 * @param array<string, mixed> $field Field configuration.
+	 *
+	 * @return void
+	 */
+	private static function renderDestinationsSettings( int $index, array $field ): void {
+		$destinations = isset( $field['destinations'] ) && is_array( $field['destinations'] ) ? $field['destinations'] : FieldDestination::all();
+		$prefix       = 'scfw_options[fields][' . $index . '][destinations][]';
+
+		$map = array(
+			FieldDestination::ADMIN_ORDER->value    => array(
+				'label' => __( 'Admin Order', 'checkout-fields-for-woocommerce' ),
+				'desc'  => __( 'Display in WooCommerce admin order details.', 'checkout-fields-for-woocommerce' ),
+			),
+			FieldDestination::THANK_YOU->value      => array(
+				'label' => __( 'Thank You Page', 'checkout-fields-for-woocommerce' ),
+				'desc'  => __( 'Display on the customer order-received page.', 'checkout-fields-for-woocommerce' ),
+			),
+			FieldDestination::MY_ACCOUNT->value     => array(
+				'label' => __( 'My Account', 'checkout-fields-for-woocommerce' ),
+				'desc'  => __( 'Display in customer order details under My Account.', 'checkout-fields-for-woocommerce' ),
+			),
+			FieldDestination::CUSTOMER_EMAIL->value => array(
+				'label' => __( 'Customer Email', 'checkout-fields-for-woocommerce' ),
+				'desc'  => __( 'Include in order emails sent to the customer.', 'checkout-fields-for-woocommerce' ),
+			),
+			FieldDestination::ADMIN_EMAIL->value    => array(
+				'label' => __( 'Admin Email', 'checkout-fields-for-woocommerce' ),
+				'desc'  => __( 'Include in new-order notification emails sent to store admin.', 'checkout-fields-for-woocommerce' ),
+			),
+		);
+		?>
+		<section class="scfw-editor-section scfw-destinations-settings">
+			<h3><?php esc_html_e( 'Show Data In', 'checkout-fields-for-woocommerce' ); ?></h3>
+			<p class="description" style="margin:0 0 12px; color:#646970;">
+				<?php esc_html_e( 'Select the touchpoints where this field’s value should be displayed once an order is placed.', 'checkout-fields-for-woocommerce' ); ?>
+			</p>
+			<div class="scfw-editor-toggle-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:10px;">
+				<?php foreach ( $map as $key => $item ) : ?>
+					<?php $checked = in_array( $key, $destinations, true ); ?>
+					<label class="scfw-editor-switch" style="display:flex; align-items:flex-start; gap:8px; background:#f9fafb; padding:10px 12px; border-radius:6px; border:1px solid #e5e7eb; cursor:pointer;">
+						<input type="checkbox" name="<?php echo esc_attr( $prefix ); ?>" value="<?php echo esc_attr( $key ); ?>" <?php checked( $checked, true ); ?> style="margin-top:3px;" />
+						<span>
+							<strong style="display:block; font-size:13px; color:#1f2937;"><?php echo esc_html( $item['label'] ); ?></strong>
+							<small style="display:block; font-size:11px; color:#6b7280; line-height:1.3; margin-top:2px;"><?php echo esc_html( $item['desc'] ); ?></small>
+						</span>
+					</label>
+				<?php endforeach; ?>
+			</div>
+		</section>
+		<?php
+	}
+
 
 	/**
 	 * Render type-specific controls for an editor.

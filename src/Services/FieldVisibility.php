@@ -38,17 +38,24 @@ final class FieldVisibility {
 	/**
 	 * Determine whether a checkout field should be visible.
 	 *
-	 * The shared decision is resolved exactly once per field by the checkout
-	 * coordinators; this service never performs rule evaluation itself.
+	 * Evaluates basic conditions against provided context values (e.g. submitted data)
+	 * and fires the scfw_field_visibility filter for extensibility.
 	 *
 	 * @since 0.0.1
 	 *
 	 * @param string                    $field_id     Checkout field id.
 	 * @param array<int|string, mixed>  $field_config Normalized field configuration entry.
+	 * @param array<string, mixed>|null $values       Submitted or contextual values for evaluation.
 	 *
 	 * @return bool True when the field should be visible.
 	 */
-	public static function isVisible( string $field_id, array $field_config ): bool {
+	public static function isVisible( string $field_id, array $field_config, ?array $values = null ): bool {
+		if ( null !== $values && isset( $field_config['conditions'] ) && is_array( $field_config['conditions'] ) ) {
+			if ( ! ConditionEvaluator::isMet( $field_config['conditions'], $values ) ) {
+				return false;
+			}
+		}
+
 		return (bool) apply_filters( self::FILTER, true, $field_id, $field_config );
 	}
 }

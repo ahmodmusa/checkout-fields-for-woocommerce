@@ -38,7 +38,21 @@ final class ClassicRenderer implements Renderer {
 	public function render( Field $field, RenderContext $context ): RenderResult {
 		$value = $context->getValues()[ $field->getId() ] ?? $field->getDefaultValue();
 		$args  = $this->fieldArgs( $field, $context );
-		$html  = woocommerce_form_field( $field->getId(), $args, $value );
+		$html = woocommerce_form_field( $field->getId(), $args, $value );
+
+		if ( $field->hasConditions() ) {
+			$condition = $field->getConditions();
+
+			if ( is_array( $condition ) ) {
+				$cond_attrs = sprintf(
+					' data-scfw-condition-field="%s" data-scfw-condition-operator="%s" data-scfw-condition-value="%s"',
+					\esc_attr( (string) $condition['field'] ),
+					\esc_attr( (string) $condition['operator'] ),
+					\esc_attr( (string) $condition['value'] )
+				);
+				$html       = preg_replace( '/^(\s*<p\b|\s*<div\b)/i', '$1' . $cond_attrs, (string) $html, 1 );
+			}
+		}
 
 		if ( FieldType::SELECT === $field->getType() && ( $field->getRequired() || '' !== $field->getPlaceholder() ) ) {
 			$html = self::withEmptySelectOption( (string) $html, $field->getPlaceholder() );
@@ -46,6 +60,7 @@ final class ClassicRenderer implements Renderer {
 
 		return new RenderResult( (string) $html, array() );
 	}
+
 
 	/**
 	 * Insert a leading placeholder option into a select if placeholder is set or if required.
@@ -97,12 +112,17 @@ final class ClassicRenderer implements Renderer {
 			'return'      => true,
 		);
 
-		if ( $context->getAttributes() ) {
-			$args['custom_attributes'] = $context->getAttributes();
+		$custom_attributes = $context->getAttributes();
+
+		if ( ! empty( $custom_attributes ) ) {
+			$args['custom_attributes'] = $custom_attributes;
 		}
 
 		return $args;
 	}
+
+
+
 
 	/**
 	 * Resolve the description shown for a field.

@@ -50,5 +50,10 @@ final class ClassicAssets {
 		$style_version = (string) filemtime( SCFW_PATH . 'assets/frontend/classic.css' );
 
 		wp_enqueue_style( 'scfw-classic', SCFW_URL . 'assets/frontend/classic.css', array(), $style_version );
+
+		if ( is_checkout() || ( ! empty( $post ) && has_shortcode( $post->post_content, 'woocommerce_checkout' ) ) ) {
+			$script_version = (string) filemtime( SCFW_PATH . 'assets/frontend/classic.js' );
+			wp_enqueue_script( 'scfw-classic-script', SCFW_URL . 'assets/frontend/classic.js', array(), $script_version, true );
+		}
 	}
 }

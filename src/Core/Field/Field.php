@@ -77,6 +77,20 @@ final class Field {
 	private string|array $defaultValue;
 
 	/**
+	 * Enabled presentation destinations.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $destinations;
+
+	/**
+	 * Conditional visibility configuration.
+	 *
+	 * @var array{field: string, operator: string, value: string}|null
+	 */
+	private ?array $conditions;
+
+	/**
 	 * Create a new field.
 	 *
 	 * @since 0.0.1
@@ -89,6 +103,8 @@ final class Field {
 	 * @param string              $description  Field description.
 	 * @param array<int, string>  $options      Selectable options for choice-based fields.
 	 * @param string|array<int, string> $defaultValue Default value.
+	 * @param array<int, string>  $destinations Enabled presentation destinations.
+	 * @param array{field: string, operator: string, value: string}|null $conditions Conditional visibility rule.
 	 */
 	public function __construct(
 		string $id,
@@ -98,7 +114,9 @@ final class Field {
 		string $placeholder = '',
 		string $description = '',
 		array $options = array(),
-		string|array $defaultValue = ''
+		string|array $defaultValue = '',
+		array $destinations = array(),
+		?array $conditions = null
 	) {
 		$this->id           = $id;
 		$this->label        = $label;
@@ -108,7 +126,10 @@ final class Field {
 		$this->description  = $description;
 		$this->options      = $options;
 		$this->defaultValue = $defaultValue;
+		$this->destinations = empty( $destinations ) ? FieldDestination::all() : FieldDestination::normalize( $destinations );
+		$this->conditions   = $conditions;
 	}
+
 
 	/**
 	 * Get the field identifier.
@@ -196,5 +217,53 @@ final class Field {
 	 */
 	public function getDefaultValue(): string|array {
 		return $this->defaultValue;
+	}
+
+	/**
+	 * Get the enabled presentation destinations.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return array<int, string> Enabled destination identifiers.
+	 */
+	public function getDestinations(): array {
+		return $this->destinations;
+	}
+
+	/**
+	 * Check whether this field is enabled for a given presentation destination.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param FieldDestination|string $destination Presentation destination to check.
+	 *
+	 * @return bool True when the destination is enabled.
+	 */
+	public function hasDestination( FieldDestination|string $destination ): bool {
+		$value = $destination instanceof FieldDestination ? $destination->value : $destination;
+
+		return in_array( $value, $this->destinations, true );
+	}
+
+	/**
+	 * Get the conditional visibility rule.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return array{field: string, operator: string, value: string}|null Condition or null.
+	 */
+	public function getConditions(): ?array {
+		return $this->conditions;
+	}
+
+	/**
+	 * Determine whether this field has an active conditional visibility rule.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return bool True if a condition is set.
+	 */
+	public function hasConditions(): bool {
+		return null !== $this->conditions && ! empty( $this->conditions['field'] );
 	}
 }

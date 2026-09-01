@@ -106,12 +106,8 @@ final class BlockCheckout {
 	 *
 	 * @return void
 	 */
-	public function enqueueDateFieldScript(): void {
+	public function enqueueBlockAssets(): void {
 		if ( is_admin() || ! is_checkout() ) {
-			return;
-		}
-
-		if ( ! self::hasVisibleDateField() ) {
 			return;
 		}
 
@@ -132,30 +128,23 @@ final class BlockCheckout {
 			$script_version,
 			true
 		);
-	}
 
-	/**
-	 * Check whether at least one visible Core DATE field is configured.
-	 *
-	 * @since 0.0.1
-	 *
-	 * @return bool True when a visible DATE field exists.
-	 */
-	private static function hasVisibleDateField(): bool {
-		$config = FieldRepository::config();
-
-		foreach ( FieldRepository::get() as $field ) {
-			if ( FieldType::DATE !== $field->getType() ) {
-				continue;
-			}
-
-			if ( FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
-				return true;
+		// Expose condition configuration to Block frontend.
+		$condition_map = array();
+		foreach ( FieldRepository::config() as $id => $cfg ) {
+			if ( ! empty( $cfg['conditions'] ) && is_array( $cfg['conditions'] ) ) {
+				$condition_map[ $id ] = $cfg['conditions'];
 			}
 		}
 
-		return false;
+		wp_localize_script(
+			'scfw-block-checkout-date',
+			'scfwBlockConditions',
+			$condition_map
+		);
 	}
+
+
 
 	/**
 	 * Sanitize a submitted block checkout field value.
@@ -234,8 +223,15 @@ final class BlockCheckout {
 		$additional = isset( $request['additional_fields'] ) ? (array) $request['additional_fields'] : array();
 		$config     = FieldRepository::config();
 
+		// Map additional fields with raw field ids for ConditionEvaluator.
+		$field_values = array();
+		foreach ( $additional as $key => $val ) {
+			$raw_key                  = str_starts_with( $key, self::FIELD_NAMESPACE . '/' ) ? substr( $key, strlen( self::FIELD_NAMESPACE . '/' ) ) : $key;
+			$field_values[ $raw_key ] = $val;
+		}
+
 		foreach ( FieldRepository::get() as $field ) {
-			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array(), $field_values ) ) {
 				continue;
 			}
 
@@ -255,6 +251,7 @@ final class BlockCheckout {
 			$order->update_meta_data( '_scfw_' . $field->getId(), $this->toScalar( $value ) );
 		}
 	}
+
 
 	/**
 	 * Build the Blocks API field settings from a Core field definition.
@@ -294,12 +291,20 @@ final class BlockCheckout {
 			$settings['options'] = $this->blockOptions( $field );
 		}
 
+		$attributes = array();
+
 		if ( FieldType::DATE === $field->getType() ) {
-			$settings['attributes'] = array( 'data-scfw-type' => 'date' );
+			$attributes['data-scfw-type'] = 'date';
+		}
+
+		if ( ! empty( $attributes ) ) {
+			$settings['attributes'] = $attributes;
 		}
 
 		return $settings;
 	}
+
+
 
 	/**
 	 * Map the Core choice options to the Blocks select options format.

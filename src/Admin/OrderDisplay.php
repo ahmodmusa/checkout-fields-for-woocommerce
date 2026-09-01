@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace SCFW\Admin;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Services\OrderFieldPresentation;
 use WC_Order;
+
 
 /**
  * Displays saved checkout field values on the WooCommerce admin order screen.
@@ -58,7 +60,7 @@ final class OrderDisplay {
 			return;
 		}
 
-		$rows = OrderFieldPresentation::rowsFor( $order );
+		$rows = OrderFieldPresentation::rowsFor( $order, FieldDestination::ADMIN_ORDER );
 
 		if ( empty( $rows ) ) {
 			return;

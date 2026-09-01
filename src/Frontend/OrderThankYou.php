@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace SCFW\Frontend;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Services\OrderFieldPresentation;
 use WC_Order;
+
 
 /**
  * Displays saved checkout field values on the WooCommerce Thank You page.
@@ -71,7 +73,7 @@ final class OrderThankYou {
 			return;
 		}
 
-		$rows = OrderFieldPresentation::rowsFor( $order );
+		$rows = OrderFieldPresentation::rowsFor( $order, FieldDestination::THANK_YOU );
 
 		if ( empty( $rows ) ) {
 			return;

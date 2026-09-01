@@ -58,6 +58,16 @@ function esc_html( string $text ): string {
 }
 
 /**
+ * Escape attribute the way esc_attr() does.
+ *
+ * @param string $text Raw text.
+ * @return string Escaped attribute text.
+ */
+function esc_attr( string $text ): string {
+	return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+}
+
+/**
  * Sanitize a key the way sanitize_key() does.
  *
  * @param string $key Raw key.
@@ -111,3 +121,48 @@ function absint( mixed $number ): int {
  * @return void
  */
 function add_settings_error( string $setting, string $code, string $message, string $type = 'error' ): void {}
+
+/**
+ * Minimal WP_Error stub for unit testing.
+ */
+if ( ! class_exists( 'WP_Error' ) ) {
+	class WP_Error {
+		private array $errors = array();
+
+		public function add( string|int $code, string $message, mixed $data = '' ): void {
+			$this->errors[ (string) $code ][] = $message;
+		}
+
+		public function get_error_codes(): array {
+			return array_keys( $this->errors );
+		}
+
+		public function get_error_message( string|int $code = '' ): string {
+			if ( empty( $code ) ) {
+				$codes = $this->get_error_codes();
+				$code  = reset( $codes );
+			}
+			return $this->errors[ (string) $code ][0] ?? '';
+		}
+	}
+}
+
+/**
+ * Passthrough apply_filters stub.
+ *
+ * @param string $hook_name Hook name.
+ * @param mixed  $value     Initial value.
+ * @param mixed  ...$args   Additional arguments.
+ * @return mixed Filtered value.
+ */
+function apply_filters( string $hook_name, mixed $value, mixed ...$args ): mixed {
+	return $value;
+}
+
+/**
+ * Minimal woocommerce_form_field stub for unit testing.
+ */
+function woocommerce_form_field( string $key, array $args = array(), mixed $value = null ): string {
+	$class = isset( $args['class'] ) && is_array( $args['class'] ) ? implode( ' ', $args['class'] ) : '';
+	return sprintf( '<p class="form-row %s" id="%s_field"><input type="text" name="%s" value="%s" /></p>', $class, $key, $key, (string) $value );
+}

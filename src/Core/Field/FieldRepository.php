@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 namespace SCFW\Core\Field;
 
+use SCFW\Services\ConditionEvaluator;
+
+
 /**
  * Resolves the active checkout field definitions from the stored plugin
  * configuration.
@@ -311,19 +314,26 @@ final class FieldRepository {
 			}
 		}
 
+		$destinations = FieldDestination::normalize( $entry['destinations'] ?? null );
+		$conditions   = ConditionEvaluator::normalize( $entry['conditions'] ?? null, $id );
+
 		return array(
-			'id'          => $id,
-			'label'       => $label,
-			'type'        => $type->value,
-			'required'    => ! empty( $entry['required'] ),
-			'enabled'     => ! empty( $entry['enabled'] ) || ! isset( $entry['enabled'] ),
-			'placeholder' => $placeholder,
-			'description' => $description,
-			'default'     => $default,
-			'options'     => $options,
-			'rules'       => $rules,
+			'id'           => $id,
+			'label'        => $label,
+			'type'         => $type->value,
+			'required'     => ! empty( $entry['required'] ),
+			'enabled'      => ! empty( $entry['enabled'] ) || ! isset( $entry['enabled'] ),
+			'placeholder'  => $placeholder,
+			'description'  => $description,
+			'default'      => $default,
+			'options'      => $options,
+			'destinations' => $destinations,
+			'conditions'   => $conditions,
+			'rules'        => $rules,
 		);
 	}
+
+
 
 	/**
 	 * Normalize an optional text property of a field entry.
@@ -560,16 +570,18 @@ final class FieldRepository {
 
 		foreach ( DefaultFields::get() as $field ) {
 			$config[ $field->getId() ] = array(
-				'id'          => $field->getId(),
-				'label'       => $field->getLabel(),
-				'type'        => $field->getType()->value,
-				'required'    => $field->getRequired(),
-				'enabled'     => true,
-				'placeholder' => $field->getPlaceholder(),
-				'description' => $field->getDescription(),
-				'default'     => is_string( $field->getDefaultValue() ) ? $field->getDefaultValue() : '',
-				'options'     => array_values( $field->getOptions() ),
-				'rules'       => array(),
+				'id'           => $field->getId(),
+				'label'        => $field->getLabel(),
+				'type'         => $field->getType()->value,
+				'required'     => $field->getRequired(),
+				'enabled'      => true,
+				'placeholder'  => $field->getPlaceholder(),
+				'description'  => $field->getDescription(),
+				'default'      => is_string( $field->getDefaultValue() ) ? $field->getDefaultValue() : '',
+				'options'      => array_values( $field->getOptions() ),
+				'destinations' => FieldDestination::all(),
+				'conditions'   => null,
+				'rules'        => array(),
 			);
 		}
 
@@ -579,14 +591,14 @@ final class FieldRepository {
 	/**
 	 * Build a Field value object from normalized configuration.
 	 *
-	 * The normalized placeholder, description, options and default are passed
-	 * through to the Field so checkout validation and rendering consume the
-	 * same values that were validated at save/import time.
+	 * The normalized placeholder, description, options, default, destinations and conditions
+	 * are passed through to the Field so checkout validation and rendering consume
+	 * the same values that were validated at save/import time.
 	 *
 	 * @since 0.0.1
 	 *
 	 * @param string $id       Field id.
-	 * @param array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>} $settings Normalized field settings.
+	 * @param array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, destinations?: array<int, string>, conditions?: array{field: string, operator: string, value: string}|null, rules: array<int|string, mixed>} $settings Normalized field settings.
 	 *
 	 * @return Field Built field definition.
 	 */
@@ -599,7 +611,9 @@ final class FieldRepository {
 			(string) $settings['placeholder'],
 			(string) $settings['description'],
 			is_array( $settings['options'] ?? null ) ? array_values( $settings['options'] ) : array(),
-			(string) $settings['default']
+			(string) $settings['default'],
+			is_array( $settings['destinations'] ?? null ) ? array_values( $settings['destinations'] ) : FieldDestination::all(),
+			isset( $settings['conditions'] ) && is_array( $settings['conditions'] ) ? $settings['conditions'] : null
 		);
 	}
 }

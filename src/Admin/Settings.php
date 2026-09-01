@@ -254,6 +254,14 @@ final class Settings {
 				$row['default'] = self::compatibleDefault( $type, $stored['default'], isset( $row['options'] ) && is_array( $row['options'] ) ? $row['options'] : array() );
 			}
 
+			if ( ! array_key_exists( 'destinations', $row ) && array_key_exists( 'destinations', $stored ) ) {
+				$row['destinations'] = $stored['destinations'];
+			}
+
+			if ( ! array_key_exists( 'conditions', $row ) && array_key_exists( 'conditions', $stored ) ) {
+				$row['conditions'] = $stored['conditions'];
+			}
+
 			if ( ! array_key_exists( 'rules', $row ) && array_key_exists( 'rules', $stored ) ) {
 				$row['rules'] = $stored['rules'];
 			}
