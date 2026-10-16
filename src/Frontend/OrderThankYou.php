@@ -9,8 +9,10 @@ declare(strict_types=1);
 
 namespace SCFW\Frontend;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Services\OrderFieldPresentation;
 use WC_Order;
+
 
 /**
  * Displays saved checkout field values on the WooCommerce Thank You page.
@@ -71,7 +73,7 @@ final class OrderThankYou {
 			return;
 		}
 
-		$rows = OrderFieldPresentation::rowsFor( $order );
+		$rows = OrderFieldPresentation::rowsFor( $order, FieldDestination::THANK_YOU );
 
 		if ( empty( $rows ) ) {
 			return;
@@ -83,6 +85,10 @@ final class OrderThankYou {
 	/**
 	 * Print the checkout fields section.
 	 *
+	 * Uses semantic markup with an accessible definition list structured in a
+	 * card container that inherits the theme's styling while remaining polished
+	 * and clear across both desktop and mobile viewports.
+	 *
 	 * @since 0.0.1
 	 *
 	 * @param array<int, array{id: string, label: string, value: string}> $rows Field rows.
@@ -91,14 +97,21 @@ final class OrderThankYou {
 	 */
 	private static function output( array $rows ): void {
 		?>
-		<h4><?php esc_html_e( 'Checkout Fields', 'checkout-fields-for-woocommerce' ); ?></h4>
-		<p>
-			<?php foreach ( $rows as $row ) : ?>
-				<strong><?php echo esc_html( $row['label'] ); ?>:</strong>
-				<?php echo esc_html( $row['value'] ); ?>
-				<br />
-			<?php endforeach; ?>
-		</p>
+		<section class="woocommerce-order-details scfw-thankyou-section">
+			<h2 class="woocommerce-order-details__title scfw-thankyou-title"><?php esc_html_e( 'Additional Details', 'checkout-fields-for-woocommerce' ); ?></h2>
+			<div class="scfw-order-fields-card">
+				<table class="woocommerce-table scfw-order-fields-table">
+					<tbody>
+						<?php foreach ( $rows as $row ) : ?>
+							<tr class="scfw-order-field-row scfw-order-field--<?php echo esc_attr( $row['id'] ); ?>">
+								<th scope="row" class="scfw-order-field-label"><?php echo esc_html( $row['label'] ); ?></th>
+								<td class="scfw-order-field-value"><?php echo esc_html( $row['value'] ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</section>
 		<?php
 	}
 }

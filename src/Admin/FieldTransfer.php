@@ -42,20 +42,21 @@ final class FieldTransfer {
 	private const FORMAT = 'checkout-fields-config-v1';
 
 	/**
-	 * Admin settings page location.
+	 * Admin transfer page location.
 	 *
 	 * @since 0.0.1
 	 *
 	 * @var string
 	 */
-	private const PAGE_URL = 'admin.php?page=scfw';
+	private const PAGE_URL = 'admin.php?page=scfw-fields&tab=transfer';
 
 	/**
 	 * Render the import and export controls.
 	 *
 	 * The controls intentionally live outside the WordPress settings form
 	 * because they need a separate multipart POST and are not part of the
-	 * options flow.
+	 * options flow. The two sections are titled and kept clearly apart so an
+	 * export cannot be confused with the replacing import action.
 	 *
 	 * @since 0.0.1
 	 *
@@ -63,29 +64,45 @@ final class FieldTransfer {
 	 */
 	public static function render(): void {
 		?>
-		<hr />
-		<h2><?php esc_html_e( 'Import / Export', 'checkout-fields-for-woocommerce' ); ?></h2>
+		<div class="scfw-transfer-grid">
+			<section class="scfw-card" aria-labelledby="scfw-export-heading">
+				<h2 class="scfw-card-title" id="scfw-export-heading">
+					<span class="dashicons dashicons-download" aria-hidden="true"></span>
+					<?php esc_html_e( 'Export Configuration', 'checkout-fields-for-woocommerce' ); ?>
+				</h2>
+				<p class="scfw-card-desc">
+					<?php esc_html_e( 'Download the current checkout field configuration, including the global enabled state, as a JSON file that can be imported on another installation.', 'checkout-fields-for-woocommerce' ); ?>
+				</p>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<?php wp_nonce_field( 'scfw_export' ); ?>
+					<input type="hidden" name="action" value="scfw_export" />
+					<?php submit_button( __( 'Export Configuration', 'checkout-fields-for-woocommerce' ), 'primary', 'scfw_export', false ); ?>
+				</form>
+			</section>
 
-		<h3><?php esc_html_e( 'Export Configuration', 'checkout-fields-for-woocommerce' ); ?></h3>
-		<p>
-			<?php esc_html_e( 'Download the current checkout field configuration as a JSON file that can be imported on another installation.', 'checkout-fields-for-woocommerce' ); ?>
-		</p>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-			<?php wp_nonce_field( 'scfw_export' ); ?>
-			<input type="hidden" name="action" value="scfw_export" />
-			<?php submit_button( __( 'Export Configuration', 'checkout-fields-for-woocommerce' ), 'secondary', 'scfw_export', false ); ?>
-		</form>
-
-		<h3><?php esc_html_e( 'Import Configuration', 'checkout-fields-for-woocommerce' ); ?></h3>
-		<p>
-			<?php esc_html_e( 'Import a previously exported configuration file. The current field configuration is replaced by the imported one.', 'checkout-fields-for-woocommerce' ); ?>
-		</p>
-		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
-			<?php wp_nonce_field( 'scfw_import' ); ?>
-			<input type="hidden" name="action" value="scfw_import" />
-			<input type="file" name="scfw_import_file" accept="application/json" required />
-			<?php submit_button( __( 'Import Configuration', 'checkout-fields-for-woocommerce' ), 'secondary', 'scfw_import', false ); ?>
-		</form>
+			<section class="scfw-card scfw-card--caution" aria-labelledby="scfw-import-heading">
+				<h2 class="scfw-card-title" id="scfw-import-heading">
+					<span class="dashicons dashicons-upload" aria-hidden="true"></span>
+					<?php esc_html_e( 'Import Configuration', 'checkout-fields-for-woocommerce' ); ?>
+				</h2>
+				<p class="scfw-card-desc">
+					<?php esc_html_e( 'Import a previously exported configuration file to replace the current fields.', 'checkout-fields-for-woocommerce' ); ?>
+				</p>
+				<p class="scfw-caution">
+					<span class="dashicons dashicons-warning" aria-hidden="true"></span>
+					<?php esc_html_e( 'Importing replaces your current field configuration. Export a backup first if you want to keep the current fields.', 'checkout-fields-for-woocommerce' ); ?>
+				</p>
+				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" enctype="multipart/form-data">
+					<?php wp_nonce_field( 'scfw_import' ); ?>
+					<input type="hidden" name="action" value="scfw_import" />
+					<label for="scfw-import-file">
+						<?php esc_html_e( 'Choose a configuration file', 'checkout-fields-for-woocommerce' ); ?>
+					</label>
+					<input type="file" id="scfw-import-file" name="scfw_import_file" accept="application/json" required />
+					<?php submit_button( __( 'Import Configuration', 'checkout-fields-for-woocommerce' ), 'secondary', 'scfw_import', false ); ?>
+				</form>
+			</section>
+		</div>
 		<?php
 	}
 
@@ -204,7 +221,7 @@ final class FieldTransfer {
 	 *
 	 * @param array<array-key, mixed> $fields Imported field configuration.
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}>|null Canonical field configuration, or null when invalid.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}>|null Canonical field configuration, or null when invalid.
 	 */
 	private static function validatedFields( array $fields ): ?array {
 		$clean = array();

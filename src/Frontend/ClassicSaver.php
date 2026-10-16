@@ -10,6 +10,7 @@ declare(strict_types=1);
 namespace SCFW\Frontend;
 
 use SCFW\Core\Field\Field;
+use SCFW\Core\Field\FieldType;
 
 /**
  * Persists validated checkout field values as WooCommerce order meta.
@@ -23,6 +24,11 @@ final class ClassicSaver {
 	/**
 	 * Save a field value to the order.
 	 *
+	 * An unchecked optional checkbox stores nothing: leaving the customer's
+	 * choice implicit as "off" is the same state as never visiting the field,
+	 * and an empty-string meta record would be indistinguishable presentation
+	 * noise. A checked box stores `1` so the explicit choice round-trips.
+	 *
 	 * @since 0.0.1
 	 *
 	 * @param \WC_Order $order WooCommerce order.
@@ -32,7 +38,13 @@ final class ClassicSaver {
 	 * @return void
 	 */
 	public function save( \WC_Order $order, Field $field, mixed $value ): void {
-		$order->update_meta_data( '_scfw_' . $field->getId(), $this->toScalar( $value ) );
+		$scalar = $this->toScalar( $value );
+
+		if ( FieldType::CHECKBOX === $field->getType() && '' === $scalar ) {
+			return;
+		}
+
+		$order->update_meta_data( '_scfw_' . $field->getId(), $scalar );
 	}
 
 	/**

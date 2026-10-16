@@ -34,6 +34,8 @@ final class FieldFactory {
 	 * @param string              $description  Field description.
 	 * @param array<int, string>  $options      Selectable options for choice-based fields.
 	 * @param string|array<int, string> $defaultValue Default value.
+	 * @param array<int, string>        $destinations Enabled presentation destinations.
+	 * @param array{field: string, operator: string, value: string}|null $conditions Conditional visibility rule.
 	 *
 	 * @throws InvalidArgumentException When the field identifier or label is empty.
 	 *
@@ -47,7 +49,9 @@ final class FieldFactory {
 		string $placeholder = '',
 		string $description = '',
 		array $options = array(),
-		string|array $defaultValue = ''
+		string|array $defaultValue = '',
+		array $destinations = array(),
+		?array $conditions = null
 	): Field {
 		self::validateId( $id );
 		self::validateLabel( $label );
@@ -60,9 +64,13 @@ final class FieldFactory {
 			$placeholder,
 			$description,
 			$options,
-			$defaultValue
+			$defaultValue,
+			$destinations,
+			$conditions
 		);
 	}
+
+
 
 	/**
 	 * Validate the field identifier.

@@ -27,23 +27,25 @@ form.checkout .form-row.scfw-field textarea.input-text {
 	resize: vertical;
 }
 
-/* Select -- match native WooCommerce checkout select (forms.css). */
-form.checkout .form-row.scfw-select select.select {
+/* Select -- match native WooCommerce checkout text inputs and select elements. */
+form.checkout .form-row.scfw-select select.select,
+form.checkout .form-row.scfw-select select {
 	box-sizing: border-box;
 	display: block;
 	width: 100%;
+	height: auto;
 	margin: 0;
-	padding: 0.5em;
-	padding-right: 3em;
+	padding: 3px 2.5em 3px 6px;
 	font-family: inherit;
+	font-size: 16px;
 	font-weight: 400;
-	letter-spacing: normal;
-	line-height: normal;
-	color: var(--wc-form-color-text, #000);
+	line-height: 1.5;
+	color: inherit;
 	background-color: var(--wc-form-color-background, #fff);
-	border: var(--wc-form-border-width, 1px) solid var(--wc-form-border-color, rgba(32, 7, 7, 0.8));
+	border: var(--wc-form-border-width, 1px) solid var(--wc-form-border-color, rgba(0, 0, 0, 0.2));
 	border-radius: var(--wc-form-border-radius, 4px);
 	appearance: none;
+	-webkit-appearance: none;
 	cursor: pointer;
 	background-image: url(data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSJibGFjayIgc3Ryb2tlLXdpZHRoPSIyIiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIGNsYXNzPSJmZWF0aGVyIGZlYXRoZXItY2hldnJvbi1kb3duIj48cG9seWxpbmUgcG9pbnRzPSI2IDkgMTIgMTUgMTggOSI+PC9wb2x5bGluZT48L3N2Zz4=);
 	background-repeat: no-repeat;
@@ -51,7 +53,8 @@ form.checkout .form-row.scfw-select select.select {
 	background-size: 1em;
 }
 
-form.checkout .form-row.scfw-select select.select:focus {
+form.checkout .form-row.scfw-select select.select:focus,
+form.checkout .form-row.scfw-select select:focus {
 	border-color: currentColor;
 	outline: none;
 }
@@ -61,6 +64,11 @@ form.checkout .form-row.scfw-checkbox label.checkbox {
 	display: inline;
 	vertical-align: middle;
 	cursor: pointer;
+	font-family: inherit;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	color: inherit;
 }
 
 form.checkout .form-row.scfw-checkbox label.checkbox .input-checkbox {
@@ -85,6 +93,11 @@ form.checkout .form-row.scfw-radio label.radio {
 	display: inline;
 	vertical-align: middle;
 	cursor: pointer;
+	font-family: inherit;
+	font-size: 16px;
+	font-weight: 400;
+	line-height: 1.5;
+	color: inherit;
 }
 
 form.checkout .form-row.scfw-radio label.radio::after {
@@ -95,4 +108,101 @@ form.checkout .form-row.scfw-radio label.radio::after {
 
 form.checkout .form-row.scfw-radio label.radio:last-child::after {
 	display: none;
+}
+
+
+/* ----------------------------------------------------------------------
+ * Order Received (Thank You) & My Account Order Details
+ * ---------------------------------------------------------------------- */
+
+.scfw-thankyou-section,
+.scfw-myaccount-section {
+	margin-top: 2em;
+	margin-bottom: 2em;
+}
+
+.scfw-thankyou-title,
+.scfw-myaccount-title {
+	font-size: 1.25em;
+	font-weight: 600;
+	margin-bottom: 0.75em;
+}
+
+.scfw-order-fields-card {
+	background: #ffffff;
+	border: 1px solid rgba(0, 0, 0, 0.08);
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.scfw-order-fields-table {
+	width: 100%;
+	margin: 0;
+	border-collapse: collapse;
+	border: none;
+	font-size: 0.95em;
+}
+
+.scfw-order-fields-table tbody tr {
+	border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+	transition: background-color 0.15s ease;
+}
+
+.scfw-order-fields-table tbody tr:last-child {
+	border-bottom: none;
+}
+
+.scfw-order-fields-table tbody tr:hover {
+	background-color: rgba(0, 0, 0, 0.015);
+}
+
+.scfw-order-fields-table th.scfw-order-field-label {
+	width: 35%;
+	min-width: 160px;
+	padding: 12px 18px;
+	font-weight: 600;
+	color: rgba(0, 0, 0, 0.75);
+	vertical-align: top;
+	text-align: left;
+	border: none;
+	background: transparent;
+}
+
+.scfw-order-fields-table td.scfw-order-field-value {
+	padding: 12px 18px;
+	color: rgba(0, 0, 0, 0.9);
+	vertical-align: top;
+	text-align: left;
+	border: none;
+	word-break: break-word;
+}
+
+@media (max-width: 600px) {
+	.scfw-order-fields-table,
+	.scfw-order-fields-table tbody,
+	.scfw-order-fields-table tr,
+	.scfw-order-fields-table th,
+	.scfw-order-fields-table td {
+		display: block;
+		width: 100%;
+		box-sizing: border-box;
+	}
+
+	.scfw-order-fields-table tbody tr {
+		padding: 10px 14px;
+	}
+
+	.scfw-order-fields-table th.scfw-order-field-label {
+		padding: 0 0 4px 0;
+		font-size: 0.85em;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+		opacity: 0.7;
+	}
+
+	.scfw-order-fields-table td.scfw-order-field-value {
+		padding: 0;
+		font-weight: 500;
+	}
 }

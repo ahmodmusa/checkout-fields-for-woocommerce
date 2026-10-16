@@ -54,35 +54,65 @@ final class Settings {
 			)
 		);
 
+		add_filter(
+			'wp_redirect',
+			array( self::class, 'filterRedirect' ),
+			10,
+			1
+		);
+
 		add_settings_section(
 			'scfw_general',
 			__( 'General Settings', 'checkout-fields-for-woocommerce' ),
 			'',
-			'scfw'
+			'scfw-settings'
 		);
 
 		add_settings_field(
 			'enabled',
-			__( 'Enable Plugin', 'checkout-fields-for-woocommerce' ),
+			'',
 			array( self::class, 'renderEnabledField' ),
-			'scfw',
+			'scfw-settings',
+			'scfw_general'
+		);
+
+		add_settings_field(
+			'developer_diagnostics',
+			'',
+			array( self::class, 'renderDeveloperDiagnosticsField' ),
+			'scfw-settings',
 			'scfw_general'
 		);
 
 		add_settings_section(
 			'scfw_fields',
-			__( 'Checkout Fields', 'checkout-fields-for-woocommerce' ),
 			'',
-			'scfw'
+			'',
+			'scfw-fields'
 		);
 
 		add_settings_field(
 			'fields',
-			__( 'Configured Checkout Fields', 'checkout-fields-for-woocommerce' ),
+			'',
 			array( FieldBuilder::class, 'render' ),
-			'scfw',
+			'scfw-fields',
 			'scfw_fields'
 		);
+	}
+
+	/**
+	 * Determine whether Developer Diagnostics is enabled.
+	 *
+	 * Defaults to false (OFF) unless explicitly enabled in settings.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return bool True if developer diagnostics is enabled.
+	 */
+	public static function isDeveloperDiagnosticsEnabled(): bool {
+		$options = get_option( self::OPTION_NAME, array() );
+
+		return is_array( $options ) && ! empty( $options['developer_diagnostics'] );
 	}
 
 	/**
@@ -103,7 +133,8 @@ final class Settings {
 		$current = is_array( $current ) ? $current : array();
 
 		$clean = array(
-			'enabled' => isset( $options['enabled'] ) ? absint( $options['enabled'] ) : ( isset( $current['enabled'] ) ? absint( $current['enabled'] ) : 0 ),
+			'enabled'               => isset( $options['enabled'] ) ? absint( $options['enabled'] ) : ( isset( $current['enabled'] ) ? absint( $current['enabled'] ) : 0 ),
+			'developer_diagnostics' => isset( $options['developer_diagnostics'] ) ? absint( $options['developer_diagnostics'] ) : ( isset( $current['developer_diagnostics'] ) ? absint( $current['developer_diagnostics'] ) : 0 ),
 		);
 
 		if ( isset( $options['fields'] ) && is_array( $options['fields'] ) ) {
@@ -128,6 +159,38 @@ final class Settings {
 	}
 
 	/**
+	 * Filter redirection target after saving settings via options.php.
+	 *
+	 * Ensures deterministic redirection back to the SCFW admin screen
+	 * (preserving the active tab if present) instead of landing on options.php.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param string $location The original redirect URL.
+	 * @return string Filtered redirect URL.
+	 */
+	public static function filterRedirect( string $location ): string {
+		// Only intercept when SCFW option page was submitted (nonce already verified by options.php).
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		if ( ! isset( $_POST['option_page'] ) || 'scfw' !== $_POST['option_page'] ) {
+			return $location;
+		}
+
+		$referer = isset( $_POST['_wp_http_referer'] ) ? sanitize_text_field( wp_unslash( $_POST['_wp_http_referer'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		if ( ! empty( $referer ) && strpos( $referer, 'page=scfw-fields' ) !== false ) {
+			if ( preg_match( '#^https?://#i', $referer ) ) {
+				return add_query_arg( 'settings-updated', 'true', $referer );
+			}
+			$clean_path = preg_replace( '#^/?wp-admin/#', '', $referer );
+			return add_query_arg( 'settings-updated', 'true', admin_url( $clean_path ) );
+		}
+
+		return admin_url( 'admin.php?page=scfw-fields&settings-updated=true' );
+	}
+
+	/**
 	 * Render the enabled checkbox field.
 	 *
 	 * @since 0.0.1
@@ -136,12 +199,40 @@ final class Settings {
 	 */
 	public static function renderEnabledField(): void {
 		$options = get_option( self::OPTION_NAME, array() );
+		$options = is_array( $options ) ? $options : array();
 		?>
-		<label for="enabled">
+		<label class="scfw-switch" for="scfw_enabled">
 			<input type="hidden" name="scfw_options[enabled]" value="0" />
-			<input type="checkbox" id="enabled" name="scfw_options[enabled]" value="1" <?php checked( ! empty( $options['enabled'] ), true ); ?> />
-			<?php echo esc_html__( 'Enable the plugin.', 'checkout-fields-for-woocommerce' ); ?>
+			<input type="checkbox" class="scfw-switch__input" id="scfw_enabled" name="scfw_options[enabled]" value="1" <?php checked( ! empty( $options['enabled'] ), true ); ?> />
+			<span class="scfw-switch__track" aria-hidden="true"><span class="scfw-switch__thumb"></span></span>
+			<span class="scfw-switch__title"><?php esc_html_e( 'Enable Checkout Fields', 'checkout-fields-for-woocommerce' ); ?></span>
 		</label>
+		<p class="description scfw-switch-copy">
+			<?php esc_html_e( 'When enabled, custom fields appear during checkout. When disabled, custom fields are not shown at checkout but the configuration is preserved.', 'checkout-fields-for-woocommerce' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render the developer diagnostics checkbox field in settings.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return void
+	 */
+	public static function renderDeveloperDiagnosticsField(): void {
+		$options = get_option( self::OPTION_NAME, array() );
+		$options = is_array( $options ) ? $options : array();
+		?>
+		<label class="scfw-switch" for="scfw_developer_diagnostics">
+			<input type="hidden" name="scfw_options[developer_diagnostics]" value="0" />
+			<input type="checkbox" class="scfw-switch__input" id="scfw_developer_diagnostics" name="scfw_options[developer_diagnostics]" value="1" <?php checked( ! empty( $options['developer_diagnostics'] ), true ); ?> />
+			<span class="scfw-switch__track" aria-hidden="true"><span class="scfw-switch__thumb"></span></span>
+			<span class="scfw-switch__title"><?php esc_html_e( 'Developer Diagnostics', 'checkout-fields-for-woocommerce' ); ?></span>
+		</label>
+		<p class="description scfw-switch-copy">
+			<?php esc_html_e( 'Show technical field identifiers, storage keys, and lifecycle details in the Field Builder.', 'checkout-fields-for-woocommerce' ); ?>
+		</p>
 		<?php
 	}
 
@@ -158,12 +249,12 @@ final class Settings {
 	 * @param array<array-key, mixed> $options  Submitted form fields.
 	 * @param array<array-key, mixed> $settings Whole submitted settings value.
 	 *
-	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, rules: array<int|string, mixed>}>|null Canonical field configuration, or null when invalid.
+	 * @return array<string, array{id: string, label: string, type: string, required: bool, enabled: bool, placeholder: string, description: string, default: string, options: array<int, string>, rules: array<int|string, mixed>}>|null Canonical field configuration, or null when invalid.
 	 */
 	private static function normalizeFormFields( array $options, array $settings ): ?array {
 		$rows = self::applyMove( $options );
 
-		self::preserveProRules( $rows );
+		self::preserveStoredProperties( $rows );
 
 		foreach ( $rows as $id => $row ) {
 			if ( is_array( $row ) && ! empty( $row['remove'] ) ) {
@@ -179,12 +270,21 @@ final class Settings {
 	}
 
 	/**
-	 * Carry over stored Pro rules for rows that do not submit a rules value.
+	 * Carry over stored configuration for rows that do not submit a value,
+	 * keeping only the properties that stay valid for the row's type.
 	 *
-	 * The Free field builder has no rules control, so a saved field would
-	 * otherwise strip an existing `rules` value created by the Pro extension.
-	 * Free never evaluates these rules; it only preserves them verbatim so
-	 * Pro data survives an ordinary Free settings save without corruption.
+	 * The Free field builder has no controls for placeholder, description,
+	 * default or options yet, and it never submits rules, so a saved field
+	 * would otherwise strip an existing value created by an import or by the
+	 * Pro extension. Free never evaluates rules; it only preserves data it
+	 * does not own so an ordinary settings save cannot corrupt it.
+	 *
+	 * A type conversion must not drag incompatible properties along: an option
+	 * list that a checkbox cannot carry, or a default that no longer matches
+	 * the new type, would reject the whole configuration save. Options and the
+	 * default are therefore copied only when they validate against the row's
+	 * submitted type; incompatible values are cleared before the schema runs.
+	 * Placeholder and description are type-neutral and always preserved.
 	 *
 	 * @since 0.0.1
 	 *
@@ -192,24 +292,105 @@ final class Settings {
 	 *
 	 * @return void
 	 */
-	private static function preserveProRules( array &$rows ): void {
+	private static function preserveStoredProperties( array &$rows ): void {
 		$current = get_option( self::OPTION_NAME, array() );
 		$current = is_array( $current ) && isset( $current['fields'] ) && is_array( $current['fields'] ) ? $current['fields'] : array();
 
 		foreach ( $rows as &$row ) {
-			if ( ! is_array( $row ) || array_key_exists( 'rules', $row ) ) {
+			if ( ! is_array( $row ) ) {
 				continue;
 			}
 
 			$id = isset( $row['id'] ) && is_scalar( $row['id'] ) ? sanitize_key( (string) $row['id'] ) : '';
 
-			$stored = '' !== $id ? ( $current[ $id ] ?? null ) : null;
+			if ( '' === $id || ! isset( $current[ $id ] ) || ! is_array( $current[ $id ] ) ) {
+				continue;
+			}
 
-			if ( is_array( $stored ) && isset( $stored['rules'] ) ) {
+			$type = null;
+
+			if ( isset( $row['type'] ) && is_scalar( $row['type'] ) ) {
+				$type = FieldType::tryFrom( (string) $row['type'] );
+			}
+
+			if ( null === $type ) {
+				continue;
+			}
+
+			$stored     = $current[ $id ];
+			$storedType = isset( $stored['type'] ) && is_scalar( $stored['type'] ) ? (string) $stored['type'] : '';
+			$conversion = $storedType !== $type->value;
+
+			foreach ( array( 'placeholder', 'description' ) as $key ) {
+				if ( ! array_key_exists( $key, $row ) && array_key_exists( $key, $stored ) ) {
+					$row[ $key ] = $stored[ $key ];
+				}
+			}
+
+			if ( ! array_key_exists( 'options', $row ) && array_key_exists( 'options', $stored ) && ( FieldType::RADIO === $type || FieldType::SELECT === $type ) ) {
+				$options   = is_array( $stored['options'] ) ? $stored['options'] : array();
+				$cleared   = $conversion && array() === $options;
+
+				if ( ! $cleared ) {
+					$row['options'] = $options;
+				}
+			}
+
+			if ( ! array_key_exists( 'default', $row ) && array_key_exists( 'default', $stored ) ) {
+				$row['default'] = self::compatibleDefault( $type, $stored['default'], isset( $row['options'] ) && is_array( $row['options'] ) ? $row['options'] : array() );
+			}
+
+			if ( ! array_key_exists( 'destinations', $row ) && array_key_exists( 'destinations', $stored ) ) {
+				$row['destinations'] = $stored['destinations'];
+			}
+
+			if ( ! array_key_exists( 'conditions', $row ) && array_key_exists( 'conditions', $stored ) ) {
+				$row['conditions'] = $stored['conditions'];
+			}
+
+			if ( ! array_key_exists( 'rules', $row ) && array_key_exists( 'rules', $stored ) ) {
 				$row['rules'] = $stored['rules'];
 			}
 		}
 		unset( $row );
+	}
+
+	/**
+	 * Resolve a preserved default that stays valid for a field type.
+	 *
+	 * A default carried across a type conversion must validate against the new
+	 * type and its options; otherwise the strict schema would reject the whole
+	 * configuration save. Incompatible defaults normalize to the empty string
+	 * so the converted row then validates normally.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param FieldType          $type    New field type.
+	 * @param mixed              $default Stored default value.
+	 * @param array<mixed>       $options Effective choice options.
+	 *
+	 * @return string Compatible default.
+	 */
+	private static function compatibleDefault( FieldType $type, mixed $default, array $options ): string {
+		if ( ! is_scalar( $default ) ) {
+			return '';
+		}
+
+		$value = (string) $default;
+
+		if ( '' === $value ) {
+			return '';
+		}
+
+		if ( FieldType::CHECKBOX === $type ) {
+			return in_array( $value, array( '1', '0' ), true ) ? $value : '';
+		}
+
+		if ( FieldType::RADIO === $type || FieldType::SELECT === $type ) {
+			return in_array( $value, $options, true ) ? $value : '';
+		}
+
+		return $value;
 	}
 
 	/**

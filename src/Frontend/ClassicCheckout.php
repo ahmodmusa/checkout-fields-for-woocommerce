@@ -107,7 +107,7 @@ final class ClassicCheckout {
 		$config = FieldRepository::config();
 
 		foreach ( FieldRepository::get() as $field ) {
-			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array(), $data ) ) {
 				continue;
 			}
 
@@ -140,7 +140,7 @@ final class ClassicCheckout {
 		$config = FieldRepository::config();
 
 		foreach ( FieldRepository::get() as $field ) {
-			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array() ) ) {
+			if ( ! FieldVisibility::isVisible( $field->getId(), $config[ $field->getId() ] ?? array(), $data ) ) {
 				continue;
 			}
 
@@ -154,6 +154,7 @@ final class ClassicCheckout {
 			$this->saver->save( $order, $field, $value );
 		}
 	}
+
 
 	/**
 	 * Sanitize a field value from the posted data.

@@ -1,61 +1,91 @@
 /**
  * Block Checkout DATE field visual parity.
  *
- * WooCommerce Blocks styles text inputs via `.wc-block-components-text-input`
- * with explicit type selectors that do not include `input[type="date"]`.
- * SCFW registers DATE as text with `data-scfw-type="date"` and upgrades to
- * `type="date"` for the native calendar. This scoped rule makes that date
- * input reuse the exact Block text-input box metrics without styling the
- * browser/OS calendar popup or other Block fields.
+ * Provides a clean, static, non-moving top label design for date inputs
+ * in WooCommerce Blocks, completely avoiding floating-label jumping,
+ * overlap with native mm/dd/yyyy placeholders, and weird vertical spacing.
  */
+
+.wc-block-components-text-input:has(input[data-scfw-type="date"]),
+.wc-block-components-text-input.scfw-date-wrapper {
+	position: relative !important;
+	display: flex !important;
+	flex-direction: column !important;
+	justify-content: flex-start !important;
+	background: transparent !important;
+}
+
+.wc-block-components-text-input:has(input[data-scfw-type="date"]) label,
+.wc-block-components-text-input.scfw-date-wrapper label {
+	position: static !important;
+	transform: none !important;
+	font-size: 13px !important;
+	font-weight: 500 !important;
+	color: #4b5563 !important;
+	margin-bottom: 6px !important;
+	line-height: 1.4 !important;
+	pointer-events: auto !important;
+	padding: 0 !important;
+	transition: none !important;
+}
 
 .wc-block-components-text-input input[data-scfw-type="date"] {
 	background-color: #fff;
-	border: 1px solid color-mix(in srgb, currentColor 80%, transparent);
+	border: 1px solid #d1d5db;
 	border-radius: 4px;
 	box-sizing: border-box;
-	color: #2b2d2f;
+	color: #1f2937;
 	font-family: inherit;
-	font-size: 16px;
+	font-size: 15px;
 	font-style: inherit;
-	font-weight: inherit;
-	height: 50px;
+	font-weight: 400;
+	height: 44px;
 	letter-spacing: inherit;
-	line-height: 25px;
+	line-height: normal;
 	margin: 0;
-	min-height: 0;
-	padding: 16px 12px;
+	min-height: 44px;
+	padding: 8px 12px !important;
 	text-decoration: inherit;
 	text-transform: inherit;
 	width: 100%;
 	appearance: auto;
 	-webkit-appearance: auto;
+	cursor: pointer;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.wc-block-components-text-input input[data-scfw-type="date"]::-webkit-calendar-picker-indicator {
+	cursor: pointer;
+	opacity: 0.65;
+	padding: 4px;
+	transition: opacity 0.15s ease;
+}
+
+.wc-block-components-text-input input[data-scfw-type="date"]::-webkit-calendar-picker-indicator:hover {
+	opacity: 1;
 }
 
 .wc-block-components-text-input input[data-scfw-type="date"]:focus {
 	background-color: #fff;
-	border: 1.5px solid;
-	color: #2b2d2f;
+	border: 1.5px solid #2563eb;
+	box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 	outline: none;
 }
 
-.wc-block-components-text-input.is-active input[data-scfw-type="date"] {
-	padding: 24px 9px 8px;
-}
-
-.wc-block-components-text-input.is-active input[data-scfw-type="date"]:focus {
-	padding-top: 24px;
-	padding-left: 8.5px;
+.has-dark-controls .wc-block-components-text-input:has(input[data-scfw-type="date"]) label,
+.has-dark-controls .wc-block-components-text-input.scfw-date-wrapper label {
+	color: #e5e7eb !important;
 }
 
 .has-dark-controls .wc-block-components-text-input input[data-scfw-type="date"] {
-	background-color: rgba(0, 0, 0, 0.1);
-	border-color: hsla(0, 0%, 100%, 0.4);
+	background-color: rgba(255, 255, 255, 0.08);
+	border-color: rgba(255, 255, 255, 0.2);
 	color: #fff;
 }
 
 .has-dark-controls .wc-block-components-text-input input[data-scfw-type="date"]:focus {
-	background-color: rgba(0, 0, 0, 0.1);
-	border: 1.5px solid;
-	color: #fff;
+	background-color: rgba(255, 255, 255, 0.12);
+	border-color: #60a5fa;
+	box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.25);
 }

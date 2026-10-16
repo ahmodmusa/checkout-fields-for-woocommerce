@@ -9,6 +9,7 @@ declare(strict_types=1);
 
 namespace SCFW\Frontend;
 
+use SCFW\Core\Field\FieldDestination;
 use SCFW\Services\OrderFieldPresentation;
 use WC_Email;
 use WC_Order;
@@ -53,7 +54,8 @@ final class OrderEmail {
 	 * @return void
 	 */
 	public static function render( WC_Order $order, bool $sent_to_admin, bool $plain_text, WC_Email $email ): void {
-		$rows = OrderFieldPresentation::rowsFor( $order );
+		$destination = $sent_to_admin ? FieldDestination::ADMIN_EMAIL : FieldDestination::CUSTOMER_EMAIL;
+		$rows        = OrderFieldPresentation::rowsFor( $order, $destination );
 
 		if ( empty( $rows ) ) {
 			return;
