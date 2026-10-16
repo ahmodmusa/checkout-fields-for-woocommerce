@@ -54,6 +54,13 @@ final class Settings {
 			)
 		);
 
+		add_filter(
+			'wp_redirect',
+			array( self::class, 'filterRedirect' ),
+			10,
+			1
+		);
+
 		add_settings_section(
 			'scfw_general',
 			__( 'General Settings', 'checkout-fields-for-woocommerce' ),
@@ -65,6 +72,14 @@ final class Settings {
 			'enabled',
 			'',
 			array( self::class, 'renderEnabledField' ),
+			'scfw-settings',
+			'scfw_general'
+		);
+
+		add_settings_field(
+			'developer_diagnostics',
+			'',
+			array( self::class, 'renderDeveloperDiagnosticsField' ),
 			'scfw-settings',
 			'scfw_general'
 		);
@@ -86,6 +101,21 @@ final class Settings {
 	}
 
 	/**
+	 * Determine whether Developer Diagnostics is enabled.
+	 *
+	 * Defaults to false (OFF) unless explicitly enabled in settings.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return bool True if developer diagnostics is enabled.
+	 */
+	public static function isDeveloperDiagnosticsEnabled(): bool {
+		$options = get_option( self::OPTION_NAME, array() );
+
+		return is_array( $options ) && ! empty( $options['developer_diagnostics'] );
+	}
+
+	/**
 	 * Sanitize the plugin settings.
 	 *
 	 * Preserves the existing `enabled` behavior and normalizes the submitted
@@ -103,7 +133,8 @@ final class Settings {
 		$current = is_array( $current ) ? $current : array();
 
 		$clean = array(
-			'enabled' => isset( $options['enabled'] ) ? absint( $options['enabled'] ) : ( isset( $current['enabled'] ) ? absint( $current['enabled'] ) : 0 ),
+			'enabled'               => isset( $options['enabled'] ) ? absint( $options['enabled'] ) : ( isset( $current['enabled'] ) ? absint( $current['enabled'] ) : 0 ),
+			'developer_diagnostics' => isset( $options['developer_diagnostics'] ) ? absint( $options['developer_diagnostics'] ) : ( isset( $current['developer_diagnostics'] ) ? absint( $current['developer_diagnostics'] ) : 0 ),
 		);
 
 		if ( isset( $options['fields'] ) && is_array( $options['fields'] ) ) {
@@ -128,6 +159,38 @@ final class Settings {
 	}
 
 	/**
+	 * Filter redirection target after saving settings via options.php.
+	 *
+	 * Ensures deterministic redirection back to the SCFW admin screen
+	 * (preserving the active tab if present) instead of landing on options.php.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param string $location The original redirect URL.
+	 * @return string Filtered redirect URL.
+	 */
+	public static function filterRedirect( string $location ): string {
+		// Only intercept when SCFW option page was submitted (nonce already verified by options.php).
+		// phpcs:disable WordPress.Security.NonceVerification.Missing
+		if ( ! isset( $_POST['option_page'] ) || 'scfw' !== $_POST['option_page'] ) {
+			return $location;
+		}
+
+		$referer = isset( $_POST['_wp_http_referer'] ) ? sanitize_text_field( wp_unslash( $_POST['_wp_http_referer'] ) ) : '';
+		// phpcs:enable WordPress.Security.NonceVerification.Missing
+
+		if ( ! empty( $referer ) && strpos( $referer, 'page=scfw-fields' ) !== false ) {
+			if ( preg_match( '#^https?://#i', $referer ) ) {
+				return add_query_arg( 'settings-updated', 'true', $referer );
+			}
+			$clean_path = preg_replace( '#^/?wp-admin/#', '', $referer );
+			return add_query_arg( 'settings-updated', 'true', admin_url( $clean_path ) );
+		}
+
+		return admin_url( 'admin.php?page=scfw-fields&settings-updated=true' );
+	}
+
+	/**
 	 * Render the enabled checkbox field.
 	 *
 	 * @since 0.0.1
@@ -146,6 +209,29 @@ final class Settings {
 		</label>
 		<p class="description scfw-switch-copy">
 			<?php esc_html_e( 'When enabled, custom fields appear during checkout. When disabled, custom fields are not shown at checkout but the configuration is preserved.', 'checkout-fields-for-woocommerce' ); ?>
+		</p>
+		<?php
+	}
+
+	/**
+	 * Render the developer diagnostics checkbox field in settings.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return void
+	 */
+	public static function renderDeveloperDiagnosticsField(): void {
+		$options = get_option( self::OPTION_NAME, array() );
+		$options = is_array( $options ) ? $options : array();
+		?>
+		<label class="scfw-switch" for="scfw_developer_diagnostics">
+			<input type="hidden" name="scfw_options[developer_diagnostics]" value="0" />
+			<input type="checkbox" class="scfw-switch__input" id="scfw_developer_diagnostics" name="scfw_options[developer_diagnostics]" value="1" <?php checked( ! empty( $options['developer_diagnostics'] ), true ); ?> />
+			<span class="scfw-switch__track" aria-hidden="true"><span class="scfw-switch__thumb"></span></span>
+			<span class="scfw-switch__title"><?php esc_html_e( 'Developer Diagnostics', 'checkout-fields-for-woocommerce' ); ?></span>
+		</label>
+		<p class="description scfw-switch-copy">
+			<?php esc_html_e( 'Show technical field identifiers, storage keys, and lifecycle details in the Field Builder.', 'checkout-fields-for-woocommerce' ); ?>
 		</p>
 		<?php
 	}

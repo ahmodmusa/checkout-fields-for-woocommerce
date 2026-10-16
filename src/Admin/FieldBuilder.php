@@ -37,6 +37,7 @@ final class FieldBuilder {
 		$typeCases     = FieldType::cases();
 		$fieldCount    = count( $config );
 		$requiredCount = 0;
+		$devMode       = Settings::isDeveloperDiagnosticsEnabled();
 
 		foreach ( $config as $field ) {
 			if ( ! empty( $field['required'] ) ) {
@@ -44,7 +45,7 @@ final class FieldBuilder {
 			}
 		}
 		?>
-		<div class="scfw-fields-view" id="scfw-fields-view">
+		<div class="scfw-fields-view <?php echo $devMode ? 'scfw-dev-mode-active' : ''; ?>" id="scfw-fields-view">
 			<!-- Main Field Table Card Matching Reference Design -->
 			<div class="scfw-table-card">
 				<table class="scfw-fields-table" aria-label="<?php esc_attr_e( 'Checkout Fields List', 'checkout-fields-for-woocommerce' ); ?>">
@@ -68,7 +69,7 @@ final class FieldBuilder {
 							</tr>
 						<?php else : ?>
 							<?php foreach ( $config as $index => $field ) : ?>
-								<?php self::renderTableRow( $index, $field ); ?>
+								<?php self::renderTableRow( $index, $field, $devMode ); ?>
 							<?php endforeach; ?>
 						<?php endif; ?>
 					</tbody>
@@ -95,6 +96,24 @@ final class FieldBuilder {
 					</span>
 					<span class="scfw-summary-text"><?php esc_html_e( 'Location: Checkout', 'checkout-fields-for-woocommerce' ); ?></span>
 				</div>
+				<?php
+				$health = CheckoutHealth::audit( $config );
+				$is_healthy = CheckoutHealth::STATUS_HEALTHY === $health['status'];
+				$warning_count = count( $health['warnings'] );
+				?>
+				<div class="scfw-summary-item scfw-summary-item--health">
+					<?php if ( $is_healthy ) : ?>
+						<span class="scfw-health-badge scfw-health-badge--healthy">
+							<span class="scfw-health-icon" aria-hidden="true">✓</span>
+							<span class="scfw-health-text"><?php esc_html_e( 'All systems healthy', 'checkout-fields-for-woocommerce' ); ?></span>
+						</span>
+					<?php else : ?>
+						<button type="button" class="scfw-health-badge scfw-health-badge--warning scfw-trigger-health-modal" id="scfw-health-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="<?php echo esc_attr( sprintf( /* translators: %d is count */ _n( '%d configuration warning. Click to view details.', '%d configuration warnings. Click to view details.', $warning_count, 'checkout-fields-for-woocommerce' ), $warning_count ) ); ?>">
+							<span class="scfw-health-icon" aria-hidden="true">⚠</span>
+							<span class="scfw-health-text"><?php echo esc_html( sprintf( /* translators: %d is count */ _n( '%d configuration warning', '%d configuration warnings', $warning_count, 'checkout-fields-for-woocommerce' ), $warning_count ) ); ?></span>
+						</button>
+					<?php endif; ?>
+				</div>
 			</div>
 
 			<!-- Editor Modal/Drawer Workspace for Full Field Controls -->
@@ -108,7 +127,7 @@ final class FieldBuilder {
 					</div>
 					<div class="scfw-modal-body" id="scfw-modal-body">
 						<?php foreach ( $config as $index => $field ) : ?>
-							<?php self::renderFieldEditor( $index, $field, $typeCases, $fieldCount, false, $config ); ?>
+							<?php self::renderFieldEditor( $index, $field, $typeCases, $fieldCount, false, $config, $devMode ); ?>
 						<?php endforeach; ?>
 						<?php self::renderAddFieldPanel( $typeCases ); ?>
 					</div>
@@ -131,21 +150,40 @@ final class FieldBuilder {
 	}
 
 	/**
+	 * Render auxiliary modals (Templates, Health) outside the settings form.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return void
+	 */
+	public static function renderModals(): void {
+		$config = array_values( FieldRepository::config() );
+		$health = CheckoutHealth::audit( $config );
+
+		self::renderTemplatesModal();
+		self::renderHealthModal( $health );
+	}
+
+	/**
 	 * Render one table row matching reference columns and styling.
 	 *
 	 * @since 0.0.1
 	 *
-	 * @param int                  $index Field index.
-	 * @param array<string, mixed> $field Field configuration.
+	 * @param int                  $index   Field index.
+	 * @param array<string, mixed> $field   Field configuration.
+	 * @param bool                 $devMode Whether Developer Diagnostics is enabled.
 	 *
 	 * @return void
 	 */
-	private static function renderTableRow( int $index, array $field ): void {
+	private static function renderTableRow( int $index, array $field, bool $devMode = false ): void {
+		$id       = (string) ( $field['id'] ?? '' );
 		$type     = (string) ( $field['type'] ?? 'text' );
 		$label    = (string) ( $field['label'] ?? '' );
 		$enabled  = ! empty( $field['enabled'] );
 		$required = ! empty( $field['required'] );
 		$typeName = ucfirst( $type );
+		$metaKey  = DeveloperDiagnostics::metaKey( $id );
+		$destMap  = DeveloperDiagnostics::destinationLabels();
 		?>
 		<tr class="scfw-field-row <?php echo $enabled ? '' : 'scfw-field-row--disabled'; ?>" data-row="<?php echo esc_attr( (string) $index ); ?>" data-type="<?php echo esc_attr( $type ); ?>">
 			<!-- Drag Handle -->
@@ -209,6 +247,39 @@ final class FieldBuilder {
 				</div>
 			</td>
 		</tr>
+		<?php if ( $devMode ) : ?>
+			<tr class="scfw-dev-row" data-row="<?php echo esc_attr( (string) $index ); ?>">
+				<td colspan="7" class="scfw-dev-cell">
+					<div class="scfw-dev-bar">
+						<span class="scfw-dev-chip">
+							<strong class="scfw-dev-chip-label"><?php esc_html_e( 'ID:', 'checkout-fields-for-woocommerce' ); ?></strong>
+							<code><?php echo esc_html( $id ); ?></code>
+						</span>
+						<span class="scfw-dev-chip">
+							<strong class="scfw-dev-chip-label"><?php esc_html_e( 'Meta Key:', 'checkout-fields-for-woocommerce' ); ?></strong>
+							<code><?php echo esc_html( $metaKey ); ?></code>
+							<button type="button" class="button button-small scfw-copy-key-btn" data-key="<?php echo esc_attr( $metaKey ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s is meta key */ __( 'Copy meta key %s', 'checkout-fields-for-woocommerce' ), $metaKey ) ); ?>">
+								<?php esc_html_e( 'Copy Key', 'checkout-fields-for-woocommerce' ); ?>
+							</button>
+						</span>
+						<span class="scfw-dev-chip scfw-dev-chip--destinations">
+							<strong class="scfw-dev-chip-label"><?php esc_html_e( 'Destinations:', 'checkout-fields-for-woocommerce' ); ?></strong>
+							<span class="scfw-dev-dest-list">
+								<?php
+								$activeDests = array();
+								foreach ( $destMap as $k => $destLabel ) {
+									if ( DeveloperDiagnostics::isDestinationActive( $field, $k ) ) {
+										$activeDests[] = $destLabel;
+									}
+								}
+								echo esc_html( ! empty( $activeDests ) ? implode( ' · ', $activeDests ) : __( 'None', 'checkout-fields-for-woocommerce' ) );
+								?>
+							</span>
+						</span>
+					</div>
+				</td>
+			</tr>
+		<?php endif; ?>
 		<?php
 	}
 
@@ -223,10 +294,11 @@ final class FieldBuilder {
 	 * @param int                         $total     Total field count.
 	 * @param bool                        $selected  Whether this is initially selected.
 	 * @param array<int, mixed>           $allFields All configured fields.
+	 * @param bool                        $devMode   Whether Developer Diagnostics is enabled.
 	 *
 	 * @return void
 	 */
-	private static function renderFieldEditor( int $index, array $field, array $typeCases, int $total, bool $selected, array $allFields ): void {
+	private static function renderFieldEditor( int $index, array $field, array $typeCases, int $total, bool $selected, array $allFields, bool $devMode = false ): void {
 		$type = (string) $field['type'];
 		?>
 		<div class="scfw-field-details scfw-field-editor" id="scfw-field-editor-<?php echo esc_attr( (string) $index ); ?>" data-row="<?php echo esc_attr( (string) $index ); ?>" <?php echo $selected ? '' : 'hidden'; ?>>
@@ -283,6 +355,16 @@ final class FieldBuilder {
 
 			<?php self::renderDestinationsSettings( $index, $field ); ?>
 
+			<section class="scfw-editor-section scfw-editor-preview-section">
+				<h3><?php esc_html_e( 'Live Preview', 'checkout-fields-for-woocommerce' ); ?></h3>
+				<div class="scfw-field-preview-container">
+					<?php echo FieldPreviewRenderer::render( $field ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
+				</div>
+			</section>
+
+			<?php if ( $devMode ) : ?>
+				<?php self::renderDeveloperDiagnosticsSection( $field ); ?>
+			<?php endif; ?>
 
 			<div class="scfw-editor-actions">
 				<button type="submit" class="button scfw-remove" name="scfw_options[fields][<?php echo esc_attr( (string) $index ); ?>][remove]" value="1" data-confirm="<?php esc_attr_e( 'Are you sure you want to delete this field?', 'checkout-fields-for-woocommerce' ); ?>">
@@ -545,6 +627,231 @@ final class FieldBuilder {
 			<button type="button" class="button-link scfw-option-down" aria-label="<?php esc_attr_e( 'Move option down', 'checkout-fields-for-woocommerce' ); ?>" <?php disabled( ! $enabled ); ?>>&#8595;</button>
 			<button type="button" class="button-link scfw-option-remove" aria-label="<?php esc_attr_e( 'Remove option', 'checkout-fields-for-woocommerce' ); ?>" <?php disabled( ! $enabled ); ?>><?php esc_html_e( 'Remove', 'checkout-fields-for-woocommerce' ); ?></button>
 		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Use-Case Templates / Field Packs modal.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @return void
+	 */
+	private static function renderTemplatesModal(): void {
+		$templates = \SCFW\Core\Field\FieldTemplateRepository::all();
+		?>
+		<div class="scfw-modal-backdrop scfw-templates-backdrop" id="scfw-templates-backdrop" hidden>
+			<div class="scfw-modal-container scfw-templates-modal-container" role="dialog" aria-modal="true" aria-labelledby="scfw-templates-modal-title">
+				<div class="scfw-modal-header">
+					<div>
+						<h2 id="scfw-templates-modal-title" style="margin:0 0 4px;"><?php esc_html_e( 'Use-Case Templates', 'checkout-fields-for-woocommerce' ); ?></h2>
+						<p class="description" style="margin:0; font-size:13px; color:#6b7280;">
+							<?php esc_html_e( 'Choose a ready-to-use pack of checkout fields. Applying a pack safely appends fields without overwriting your existing configuration.', 'checkout-fields-for-woocommerce' ); ?>
+						</p>
+					</div>
+					<button type="button" class="scfw-modal-close" id="scfw-templates-modal-close" aria-label="<?php esc_attr_e( 'Close', 'checkout-fields-for-woocommerce' ); ?>">
+						<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+					</button>
+				</div>
+				<div class="scfw-modal-body scfw-templates-modal-body" style="padding:20px; max-height:70vh; overflow-y:auto;">
+					<div class="scfw-templates-grid" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:16px;">
+						<?php foreach ( $templates as $pack_id => $pack ) : ?>
+							<div class="scfw-template-card" style="background:#ffffff; border:1px solid #e5e7eb; border-radius:8px; padding:18px; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 1px 3px rgba(0,0,0,0.04); transition:all 0.15s ease;">
+								<div>
+									<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+										<h3 style="margin:0; font-size:16px; font-weight:600; color:#111827;"><?php echo esc_html( $pack['title'] ); ?></h3>
+										<span class="scfw-badge" style="background:#f3f4f6; color:#4b5563; font-size:11px; font-weight:600; padding:2px 8px; border-radius:12px;">
+											<?php echo esc_html( sprintf( /* translators: %d is count */ _n( '%d Field', '%d Fields', count( $pack['fields'] ), 'checkout-fields-for-woocommerce' ), count( $pack['fields'] ) ) ); ?>
+										</span>
+									</div>
+									<p style="font-size:13px; color:#6b7280; margin:0 0 14px; line-height:1.4;">
+										<?php echo esc_html( $pack['description'] ); ?>
+									</p>
+
+									<div class="scfw-template-fields-preview" style="background:#f9fafb; border-radius:6px; padding:10px 12px; margin-bottom:16px; border:1px solid #f3f4f6;">
+										<span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#9ca3af; letter-spacing:0.05em; display:block; margin-bottom:6px;">
+											<?php esc_html_e( 'Included Fields:', 'checkout-fields-for-woocommerce' ); ?>
+										</span>
+										<ul style="margin:0; padding:0 0 0 16px; font-size:12px; color:#374151;">
+											<?php foreach ( $pack['fields'] as $f ) : ?>
+												<li style="margin-bottom:3px;">
+													<strong><?php echo esc_html( $f['label'] ); ?></strong>
+													<span style="color:#9ca3af; font-size:11px;">(<?php echo esc_html( $f['type'] ); ?>)</span>
+												</li>
+											<?php endforeach; ?>
+										</ul>
+										<?php if ( 'gifting' === $pack_id ) : ?>
+											<div style="margin-top:8px; padding-top:6px; border-top:1px dashed #e5e7eb; font-size:11px; color:#6366f1;">
+												<span class="dashicons dashicons-visibility" style="font-size:14px; width:14px; height:14px; vertical-align:middle;" aria-hidden="true"></span>
+												<?php esc_html_e( 'Gift Message appears when Gift Wrapping is enabled.', 'checkout-fields-for-woocommerce' ); ?>
+											</div>
+										<?php endif; ?>
+									</div>
+								</div>
+
+								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="margin:0;">
+									<?php wp_nonce_field( 'scfw_apply_template' ); ?>
+									<input type="hidden" name="action" value="scfw_apply_template" />
+									<input type="hidden" name="template_id" value="<?php echo esc_attr( $pack_id ); ?>" />
+									<button type="submit" class="button button-secondary scfw-apply-template-btn" style="width:100%; justify-content:center; text-align:center; font-weight:600;">
+										<?php echo esc_html( sprintf( /* translators: %s is pack name */ __( 'Apply %s', 'checkout-fields-for-woocommerce' ), $pack['title'] ) ); ?>
+									</button>
+								</form>
+							</div>
+						<?php endforeach; ?>
+					</div>
+				</div>
+				<div class="scfw-modal-footer" style="padding:14px 20px; border-top:1px solid #e5e7eb; display:flex; justify-content:flex-end;">
+					<button type="button" class="button button-secondary scfw-templates-modal-cancel"><?php esc_html_e( 'Close', 'checkout-fields-for-woocommerce' ); ?></button>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Configuration Health Diagnostic modal.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array{status: string, warnings: array<int, array{code: string, severity: string, field: string, field_label: string, message: string, suggestion: string}>} $health Health audit results.
+	 *
+	 * @return void
+	 */
+	private static function renderHealthModal( array $health ): void {
+		$warnings = $health['warnings'] ?? array();
+		?>
+		<div class="scfw-modal-backdrop scfw-health-backdrop" id="scfw-health-backdrop" hidden>
+			<div class="scfw-modal-container scfw-health-modal-container" role="dialog" aria-modal="true" aria-labelledby="scfw-health-modal-title">
+				<div class="scfw-modal-header">
+					<div>
+						<h2 id="scfw-health-modal-title" style="margin:0 0 4px; display:flex; align-items:center; gap:8px;">
+							<span style="color:#d97706;" aria-hidden="true">⚠</span>
+							<?php esc_html_e( 'Configuration Health Diagnostics', 'checkout-fields-for-woocommerce' ); ?>
+						</h2>
+						<p class="description" style="margin:0; font-size:13px; color:#6b7280;">
+							<?php esc_html_e( 'Review detected checkout configuration issues and suggested fixes below.', 'checkout-fields-for-woocommerce' ); ?>
+						</p>
+					</div>
+					<button type="button" class="scfw-modal-close" id="scfw-health-modal-close" aria-label="<?php esc_attr_e( 'Close', 'checkout-fields-for-woocommerce' ); ?>">
+						<span class="dashicons dashicons-no-alt" aria-hidden="true"></span>
+					</button>
+				</div>
+				<div class="scfw-modal-body scfw-health-modal-body" style="padding:20px; max-height:70vh; overflow-y:auto;">
+					<?php if ( empty( $warnings ) ) : ?>
+						<div style="text-align:center; padding:30px 20px; color:#059669;">
+							<span style="font-size:32px; display:block; margin-bottom:8px;" aria-hidden="true">✓</span>
+							<h3 style="margin:0 0 4px; font-size:16px; color:#065f46;"><?php esc_html_e( 'All systems healthy', 'checkout-fields-for-woocommerce' ); ?></h3>
+							<p style="margin:0; font-size:13px; color:#047857;"><?php esc_html_e( 'No configuration warnings detected.', 'checkout-fields-for-woocommerce' ); ?></p>
+						</div>
+					<?php else : ?>
+						<div class="scfw-health-warnings-list" style="display:flex; flex-direction:column; gap:12px;">
+							<?php foreach ( $warnings as $w ) : ?>
+								<div class="scfw-health-warning-card" style="background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:16px;">
+									<div style="display:flex; align-items:flex-start; gap:10px;">
+										<span style="color:#d97706; font-size:16px; line-height:1.4;" aria-hidden="true">⚠</span>
+										<div style="flex:1;">
+											<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+												<strong style="color:#92400e; font-size:14px;"><?php echo esc_html( $w['field_label'] ); ?></strong>
+												<span style="font-size:11px; color:#b45309; font-weight:600; background:#fef3c7; padding:2px 8px; border-radius:4px;"><?php echo esc_html( $w['code'] ); ?></span>
+											</div>
+											<p style="margin:0 0 8px; font-size:13px; color:#78350f; line-height:1.4;">
+												<?php echo esc_html( $w['message'] ); ?>
+											</p>
+											<div style="font-size:12px; color:#92400e; background:#ffffff; border:1px solid #fef3c7; border-radius:6px; padding:8px 12px;">
+												<strong><?php esc_html_e( 'Suggested Action:', 'checkout-fields-for-woocommerce' ); ?></strong>
+												<?php echo esc_html( $w['suggestion'] ); ?>
+											</div>
+										</div>
+									</div>
+								</div>
+							<?php endforeach; ?>
+						</div>
+					<?php endif; ?>
+				</div>
+				<div class="scfw-modal-footer" style="padding:14px 20px; border-top:1px solid #e5e7eb; display:flex; justify-content:flex-end;">
+					<button type="button" class="button button-secondary scfw-health-modal-cancel"><?php esc_html_e( 'Close', 'checkout-fields-for-woocommerce' ); ?></button>
+				</div>
+			</div>
+		</div>
+		<?php
+	}
+
+	/**
+	 * Render the Developer Diagnostics section inside the field editor modal.
+	 *
+	 * @since 0.0.1
+	 *
+	 * @param array<string, mixed> $field Field configuration array.
+	 *
+	 * @return void
+	 */
+	private static function renderDeveloperDiagnosticsSection( array $field ): void {
+		$id        = (string) ( $field['id'] ?? '' );
+		$type      = (string) ( $field['type'] ?? 'text' );
+		$metaKey   = DeveloperDiagnostics::metaKey( $id );
+		$destMap   = DeveloperDiagnostics::destinationLabels();
+		$condition = DeveloperDiagnostics::conditionSummary( $field );
+		?>
+		<section class="scfw-editor-section scfw-editor-dev-diagnostics">
+			<div class="scfw-dev-section-header">
+				<div class="scfw-dev-badge"><?php esc_html_e( 'Developer Diagnostics', 'checkout-fields-for-woocommerce' ); ?></div>
+				<p class="description" style="margin:4px 0 0; font-size:12px; color:#6b7280;">
+					<?php esc_html_e( 'Read-only technical storage schema, internal keys, and lifecycle details.', 'checkout-fields-for-woocommerce' ); ?>
+				</p>
+			</div>
+
+			<div class="scfw-dev-grid">
+				<div class="scfw-dev-field">
+					<span class="scfw-dev-label"><?php esc_html_e( 'Field ID', 'checkout-fields-for-woocommerce' ); ?></span>
+					<code class="scfw-dev-code"><?php echo esc_html( $id ); ?></code>
+				</div>
+				<div class="scfw-dev-field">
+					<span class="scfw-dev-label"><?php esc_html_e( 'Field Type', 'checkout-fields-for-woocommerce' ); ?></span>
+					<code class="scfw-dev-code"><?php echo esc_html( $type ); ?></code>
+				</div>
+				<div class="scfw-dev-field scfw-dev-field--meta">
+					<span class="scfw-dev-label"><?php esc_html_e( 'Order Meta Key', 'checkout-fields-for-woocommerce' ); ?></span>
+					<div class="scfw-dev-key-row">
+						<code class="scfw-dev-code scfw-dev-code--key"><?php echo esc_html( $metaKey ); ?></code>
+						<button type="button" class="button button-small scfw-copy-key-btn" data-key="<?php echo esc_attr( $metaKey ); ?>" aria-label="<?php echo esc_attr( sprintf( /* translators: %s is meta key */ __( 'Copy meta key %s', 'checkout-fields-for-woocommerce' ), $metaKey ) ); ?>">
+							<?php esc_html_e( 'Copy Key', 'checkout-fields-for-woocommerce' ); ?>
+						</button>
+					</div>
+				</div>
+				<div class="scfw-dev-field">
+					<span class="scfw-dev-label"><?php esc_html_e( 'Condition Status', 'checkout-fields-for-woocommerce' ); ?></span>
+					<code class="scfw-dev-code"><?php echo esc_html( $condition ); ?></code>
+				</div>
+			</div>
+
+			<div class="scfw-dev-lifecycle-wrap">
+				<span class="scfw-dev-label"><?php esc_html_e( 'Order Lifecycle Presentation Matrix', 'checkout-fields-for-woocommerce' ); ?></span>
+				<table class="scfw-dev-lifecycle-table" aria-label="<?php esc_attr_e( 'Lifecycle Matrix', 'checkout-fields-for-woocommerce' ); ?>">
+					<thead>
+						<tr>
+							<th scope="col"><?php esc_html_e( 'Surface', 'checkout-fields-for-woocommerce' ); ?></th>
+							<th scope="col" style="width:70px; text-align:center;"><?php esc_html_e( 'Active', 'checkout-fields-for-woocommerce' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+						<?php foreach ( $destMap as $k => $destLabel ) : ?>
+							<?php $isActive = DeveloperDiagnostics::isDestinationActive( $field, $k ); ?>
+							<tr class="<?php echo $isActive ? 'scfw-dev-lifecycle--active' : 'scfw-dev-lifecycle--inactive'; ?>">
+								<td><?php echo esc_html( $destLabel ); ?></td>
+								<td style="text-align:center;">
+									<?php if ( $isActive ) : ?>
+										<span class="scfw-dev-check" title="<?php esc_attr_e( 'Active', 'checkout-fields-for-woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Active', 'checkout-fields-for-woocommerce' ); ?>">✓</span>
+									<?php else : ?>
+										<span class="scfw-dev-dash" title="<?php esc_attr_e( 'Inactive', 'checkout-fields-for-woocommerce' ); ?>" aria-label="<?php esc_attr_e( 'Inactive', 'checkout-fields-for-woocommerce' ); ?>">—</span>
+									<?php endif; ?>
+								</td>
+							</tr>
+						<?php endforeach; ?>
+					</tbody>
+				</table>
+			</div>
+		</section>
 		<?php
 	}
 }

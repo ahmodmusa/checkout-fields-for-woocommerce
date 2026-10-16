@@ -5,7 +5,6 @@
  * Description: Add custom checkout fields to WooCommerce Classic and Block Checkout.
  * Version: 0.0.1
  * Requires at least: 6.7
- * Tested up to: 7.1
  * Requires PHP: 8.2
  * Author: Ahmod Musa
  * Author URI: https://ahmodmusa.com

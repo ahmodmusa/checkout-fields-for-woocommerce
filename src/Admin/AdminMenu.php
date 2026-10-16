@@ -139,8 +139,19 @@ final class AdminMenu {
 				</div>
 				<?php if ( $show_add_btn ) : ?>
 					<div class="scfw-app-header__actions">
+						<button type="button" class="button button-secondary scfw-btn-secondary scfw-trigger-templates" id="scfw-top-templates-btn">
+							<svg class="scfw-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+								<line x1="3" y1="9" x2="21" y2="9"></line>
+								<line x1="9" y1="21" x2="9" y2="9"></line>
+							</svg>
+							<?php esc_html_e( 'Browse Templates', 'checkout-fields-for-woocommerce' ); ?>
+						</button>
 						<button type="button" class="button button-primary scfw-btn-primary scfw-trigger-add-field" id="scfw-top-add-btn">
-							<span class="dashicons dashicons-plus" aria-hidden="true"></span>
+							<svg class="scfw-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+								<line x1="12" y1="5" x2="12" y2="19"></line>
+								<line x1="5" y1="12" x2="19" y2="12"></line>
+							</svg>
 							<?php esc_html_e( 'Add New Field', 'checkout-fields-for-woocommerce' ); ?>
 						</button>
 					</div>
@@ -177,7 +188,7 @@ final class AdminMenu {
 		?>
 		<div class="wrap scfw-admin scfw-admin--fields">
 			<?php self::renderHeader( 'fields', true ); ?>
-			<?php settings_errors( 'scfw' ); ?>
+			<?php settings_errors(); ?>
 
 			<div class="scfw-fields-form">
 				<form method="post" action="options.php" id="scfw-fields-form">
@@ -189,6 +200,7 @@ final class AdminMenu {
 			</div>
 		</div>
 		<?php
+		FieldBuilder::renderModals();
 	}
 
 	/**
@@ -202,7 +214,7 @@ final class AdminMenu {
 		?>
 		<div class="wrap scfw-admin scfw-admin--transfer">
 			<?php self::renderHeader( 'transfer', false ); ?>
-			<?php settings_errors( 'scfw' ); ?>
+			<?php settings_errors(); ?>
 			<?php FieldTransfer::render(); ?>
 		</div>
 		<?php
@@ -219,7 +231,7 @@ final class AdminMenu {
 		?>
 		<div class="wrap scfw-admin scfw-admin--settings">
 			<?php self::renderHeader( 'settings', false ); ?>
-			<?php settings_errors( 'scfw' ); ?>
+			<?php settings_errors(); ?>
 
 			<div class="scfw-settings-panel">
 				<form method="post" action="options.php">
@@ -311,10 +323,7 @@ final class AdminMenu {
 	}
 
 	/**
-	 * Enqueue the admin assets on the plugin admin pages.
-	 *
-	 * Assets load only on the plugin pages, never on the frontend or on
-	 * other admin screens.
+	 * Enqueue the admin assets on plugin admin pages and WooCommerce order screens.
 	 *
 	 * @since 0.0.1
 	 *
@@ -323,14 +332,28 @@ final class AdminMenu {
 	 * @return void
 	 */
 	public static function enqueueAssets( string $hook_suffix ): void {
-		if ( ! in_array( $hook_suffix, self::$page_hooks, true ) ) {
+		$screen    = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+		$screen_id = $screen ? $screen->id : '';
+
+		$is_plugin_page = in_array( $hook_suffix, self::$page_hooks, true );
+		$is_order_page  = in_array( $screen_id, array( 'shop_order', 'woocommerce_page_wc-orders' ), true )
+			|| ( 'post.php' === $hook_suffix && 'shop_order' === ( $screen ? $screen->post_type : '' ) );
+
+		if ( ! $is_plugin_page && ! $is_order_page ) {
 			return;
 		}
 
-		$style_version  = (string) filemtime( SCFW_PATH . 'assets/admin/admin.css' );
-		$script_version = (string) filemtime( SCFW_PATH . 'assets/admin/field-builder.js' );
-
+		$style_version = (string) filemtime( SCFW_PATH . 'assets/admin/admin.css' );
 		wp_enqueue_style( 'scfw-admin', SCFW_URL . 'assets/admin/admin.css', array(), $style_version );
-		wp_enqueue_script( 'scfw-field-builder', SCFW_URL . 'assets/admin/field-builder.js', array(), $script_version, true );
+
+		if ( $is_plugin_page ) {
+			$script_version = (string) filemtime( SCFW_PATH . 'assets/admin/field-builder.js' );
+			wp_enqueue_script( 'scfw-field-builder', SCFW_URL . 'assets/admin/field-builder.js', array(), $script_version, true );
+		}
+
+		if ( $is_order_page ) {
+			$order_script_version = (string) filemtime( SCFW_PATH . 'assets/admin/admin-order.js' );
+			wp_enqueue_script( 'scfw-admin-order', SCFW_URL . 'assets/admin/admin-order.js', array( 'jquery' ), $order_script_version, true );
+		}
 	}
 }

@@ -1,57 +1,56 @@
 # Checkout Fields for WooCommerce
 
-This repository is the production-quality foundation for the Checkout Fields for WooCommerce plugin.
+Add custom checkout fields to WooCommerce Classic and Block Checkout.
 
-## Project Status
+Status: currently in the WordPress.org review queue.
 
-This branch implements configurable checkout fields for WooCommerce Classic and Block Checkout, including administration, import/export, ordering, validation, and HPOS-compatible order display. The plugin loads and its admin menu remains available whether or not WooCommerce is active. WooCommerce feature compatibility (custom order tables / HPOS) is declared through the WooCommerce FeaturesUtil API when WooCommerce is present.
+## Description
 
-Implemented functionality:
+**Checkout Fields for WooCommerce** gives store owners and developers an intuitive, reliable way to manage WooCommerce checkout fields across both Classic Checkout and modern WooCommerce Block Checkout.
 
-- **Bootstrap** – plugin entry point, defensive Composer autoload loading, and the plugin kernel.
-- **Administration** – admin menu, Settings API field builder, deterministic ordering, and protected JSON import/export.
-- **Field Engine** – immutable `Field` value object, `FieldType` enum, validating `FieldFactory`, default fields, and the settings-backed `FieldRepository`.
-- **Validation Foundation** – WordPress-independent `Validator` with per-type rules and `ValidationResult`/`ValidationError` value objects.
-- **Rendering Foundation** – the `Renderer` contract shared by Classic and Block Checkout, `RenderContext`/`RenderResult` value objects, and the renderer factory.
-- **Checkout Integration** – configurable Classic and Block Checkout adapters with shared validation and `_scfw_` order metadata.
-- **Admin Order Display** – escaped, capability-protected current and historical checkout values through WooCommerce order APIs.
-- **Customer Emails** – escaped checkout-field values in customer and administrative WooCommerce order emails.
-- **Thank You Page** – canonical escaped checkout-field presentation on the WooCommerce order-received surface.
-- **My Account** – authorized checkout-field presentation in the customer's WooCommerce order view.
-- **REST Order Response** – additive `scfw_fields` data on the existing administrator/shop-manager WooCommerce order REST response, using HPOS-safe order APIs.
+Create checkout fields, control when they appear, decide where their data goes, and keep your store configuration healthy without writing code.
 
-The global `scfw_options['enabled']` setting controls whether configured fields render, validate, register, or save. The administration page remains available when the feature is disabled.
+## Features
+
+- **Classic & Block Checkout Support**: Free checkout field customization for WooCommerce Classic Checkout AND modern WooCommerce Checkout Blocks.
+- **Visual Field Builder**: Easily create, edit, disable, enable, reorder, and remove custom checkout fields.
+- **Multiple Field Types**: Supports text, textarea, email, telephone, number, date, checkbox, select dropdowns, and radio choices.
+- **Basic Conditional Visibility**: Dynamically show or hide dependent fields based on customer selections at checkout (e.g., Gift Wrapping → Gift Message) with zero page reloads.
+- **Reusable Field Templates**: 1-click apply pre-configured field packs for common store scenarios (Local Delivery, Gifting, B2B / Wholesale, and Direct Contact).
+- **Live Field Preview**: Real-time visual preview of field styling, labels, placeholders, options, and required indicators directly in the field editor modal.
+- **Import / Export**: Safely export and import field configurations as structured JSON to backup or migrate between stores.
+- **Checkout Health Diagnostics**: Continuous static analysis of your checkout field configuration to alert you to broken rules, empty choices, or missing dependencies.
+- **Order Data Lifecycle & Destinations**: Field values are stored through official WooCommerce CRUD order APIs with canonical `_scfw_` metadata keys, appearing in configured destinations: Admin Order Details, Customer Thank You page, My Account Order View, Customer Invoice Emails, and Admin New Order Emails.
+- **HPOS Compatible**: Compatible with High-Performance Order Storage (HPOS); tested with real orders on both Classic and Blocks with HPOS enabled.
 
 ## Requirements
 
-- WordPress 6.7+
-- WooCommerce 9+
-- PHP 8.2+
+- **WordPress:** 6.7 or higher
+- **WooCommerce:** 9.0 or higher
+- **PHP:** 8.2 or higher
 
-## Repository Layout
+## Installation
 
-- `src/Admin/` – administration, field builder, import/export, and order display classes
-- `src/Core/` – core hook registrar and application foundations
-- `src/Core/Field/` – field engine and settings-backed field repository
-- `src/Core/Validation/` – validation foundation
-- `src/Core/Rendering/` – rendering foundation
-- `src/Services/` – reusable services
-- `assets/` – static assets directory
-- `languages/` – translation domain files
-- `tests/` – test suite directory
-- `docs/` – project documentation
+1. Upload the `checkout-fields-for-woocommerce` folder to the `/wp-content/plugins/` directory, or install the plugin directly through the WordPress plugins screen.
+2. Activate the plugin through the **Plugins** menu in WordPress.
+3. Navigate to **WooCommerce > Checkout Fields** in your WordPress admin dashboard to start creating and customizing your checkout fields.
 
-## Development Quality Gates
+## FAQ
 
-- Composer for package management
-- PHPCS for WordPress coding standards
-- PHPStan for static analysis
-- WordPress.org-ready metadata and packaging files
+### Does this plugin support WooCommerce Block Checkout?
+Yes. Checkout Fields for WooCommerce natively registers custom fields with the modern WooCommerce Block Checkout and provides smooth conditional visibility bridges.
 
-## Contributing
+### Does this plugin support High-Performance Order Storage (HPOS)?
+Yes. All field data lifecycle handlers and order presentations are built using official WooCommerce CRUD methods and are 100% HPOS compatible.
 
-Contributions should preserve the documented Classic/Block adapter architecture and the existing WordPress/WooCommerce storage conventions.
+### Where does the custom field data appear after checkout?
+You can customize each field's destinations in the Field Settings modal to show on the WooCommerce Admin Order page, Customer Thank You page, My Account order details, Customer confirmation emails, and Admin notification emails.
+
+## Changelog
+
+### 0.0.1
+- Initial release featuring Field Builder, 9 supported field types, Conditional Visibility, Data Destinations, Use-Case Templates, Checkout Health Engine, Live Field Preview, and Developer Diagnostics.
 
 ## License
 
-This repository is licensed under the GNU General Public License v2 or later.
+This project is licensed under the GNU General Public License v2.0 or later (GPL-2.0-or-later). See the [LICENSE](LICENSE) file for the full license text.

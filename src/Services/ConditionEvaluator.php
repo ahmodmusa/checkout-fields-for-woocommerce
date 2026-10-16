@@ -147,6 +147,6 @@ final class ConditionEvaluator {
 			return 'no';
 		}
 
-		return trim( (string) $val );
+		return $str;
 	}
 }

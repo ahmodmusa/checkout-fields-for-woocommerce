@@ -46,6 +46,25 @@ namespace {
 		}
 
 		/**
+		 * Delete a meta record.
+		 *
+		 * @param string $key Meta key.
+		 * @return void
+		 */
+		public function delete_meta_data( string $key ): void {
+			unset( $this->meta[ $key ] );
+		}
+
+		/**
+		 * Save order stub.
+		 *
+		 * @return int Order ID.
+		 */
+		public function save(): int {
+			return 1;
+		}
+
+		/**
 		 * Whether a meta record exists.
 		 *
 		 * @param string $key Meta key.

@@ -47,6 +47,7 @@ final class HookRegistrar {
 		add_action( 'admin_enqueue_scripts', array( AdminMenu::class, 'enqueueAssets' ) );
 		add_action( 'admin_post_scfw_export', array( FieldTransfer::class, 'export' ) );
 		add_action( 'admin_post_scfw_import', array( FieldTransfer::class, 'import' ) );
+		add_action( 'admin_post_scfw_apply_template', array( \SCFW\Core\Field\FieldTemplateRepository::class, 'handleApply' ) );
 
 		if ( WooCommerceChecker::isAvailable() ) {
 			CheckoutBootstrap::register();
